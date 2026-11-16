@@ -7,10 +7,15 @@ final class SpringLoader {
     private var target: AnyHashable?
     private var timer: Timer?
     let delay: TimeInterval
+    /// Whether a drag is still in progress when the timer fires. A drag holds the mouse button down;
+    /// if it was released (dropped or cancelled) without the view hearing that the drag left, the
+    /// pending spring-load must not navigate.
+    private let isDragLive: () -> Bool
 
-    init(delay: Duration) {
+    init(delay: Duration, isDragLive: @escaping () -> Bool = { NSEvent.pressedMouseButtons & 1 != 0 }) {
         let c = delay.components
         self.delay = Double(c.seconds) + Double(c.attoseconds) / 1e18
+        self.isDragLive = isDragLive
     }
 
     /// Call on every drag update with the folder under the cursor (nil when not over a folder).
@@ -21,8 +26,10 @@ final class SpringLoader {
         guard newTarget != nil else { return }
         timer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
-                self?.timer = nil
-                self?.target = nil  // allow re-arming if the cursor stays (e.g. after navigating)
+                guard let self else { return }
+                self.timer = nil
+                self.target = nil  // allow re-arming if the cursor stays (e.g. after navigating)
+                guard self.isDragLive() else { return }
                 fire()
             }
         }
@@ -37,6 +44,14 @@ final class SpringLoader {
 
 @MainActor
 enum DragSupport {
+    /// Marks a drag of a sidebar pin. Pin drags also carry the folder's file URL (so other parts of
+    /// macOS can show it), but inside Down they must never be treated as moving or copying files.
+    static let pinType = NSPasteboard.PasteboardType("app.down.pin")
+
+    static func isPinDrag(_ types: [NSPasteboard.PasteboardType]?) -> Bool {
+        types?.contains(pinType) ?? false
+    }
+
     static var acceptedTypes: [NSPasteboard.PasteboardType] {
         [.fileURL] + NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) }
     }

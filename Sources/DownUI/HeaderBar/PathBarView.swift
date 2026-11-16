@@ -37,6 +37,8 @@ final class BreadcrumbButton: NSButton {
     }
 
     override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
+        // Sidebar pins aren't files to move: no highlight, no spring-loading, no drop.
+        if DragSupport.isPinDrag(sender.draggingPasteboard.types) { return [] }
         dragHighlight = true
         springLoader?.hover(location.path) { [weak self] in
             guard let self else { return }
@@ -55,10 +57,12 @@ final class BreadcrumbButton: NSButton {
     override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
         dragHighlight = false
         springLoader?.cancel()
+        guard !DragSupport.isPinDrag(sender.draggingPasteboard.types) else { return false }
         return onDrop?(location, sender) ?? false
     }
 
     private func operation(for info: any NSDraggingInfo) -> NSDragOperation {
+        if DragSupport.isPinDrag(info.draggingPasteboard.types) { return [] }
         let urls = DragSupport.fileURLs(from: info.draggingPasteboard)
         if urls.isEmpty { return DragSupport.promises(from: info.draggingPasteboard).isEmpty ? [] : .copy }
         return DragSupport.dragOperation(DragSupport.operation(for: info, urls: urls, destination: location.path))
