@@ -149,10 +149,10 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
                                ("Pictures", "photo"), ("Music", "music.note"), ("Movies", "film")] {
             let p = home + "/" + name
             if fm.fileExists(atPath: p) {
-                places.append(SidebarNode(kind: .place, title: fm.displayName(atPath: p), symbol: symbol, path: p))
+                places.append(SidebarNode(kind: .place, title: FolderName.display(forPath: p), symbol: symbol, path: p))
             }
         }
-        places.append(SidebarNode(kind: .place, title: fm.displayName(atPath: "/Applications"), symbol: "square.grid.3x3",
+        places.append(SidebarNode(kind: .place, title: FolderName.display(forPath: "/Applications"), symbol: "square.grid.3x3",
                                   path: "/Applications"))
 
         let pins = vm.app.settings.pins.map { pin in
@@ -331,7 +331,7 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
     /// user gave it is shown as is. Nothing about the stored pin changes.
     static func title(of pin: Pin, resolvedPath: String) -> String {
         guard pin.name == (pin.path as NSString).lastPathComponent else { return pin.name }
-        return FileManager.default.displayName(atPath: resolvedPath)
+        return FolderName.display(forPath: resolvedPath)
     }
 
     @objc private func menuUnpin(_ sender: NSMenuItem) {

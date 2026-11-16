@@ -136,14 +136,15 @@ final class PathBarView: NSView, NSTextFieldDelegate {
 
     // MARK: Breadcrumbs
 
-    private struct Segment {
+    struct Segment {
         let title: String
         let image: NSImage?
         let location: Location
     }
 
-    private func segments(for loc: Location) -> [Segment] {
-        let home = vm.app.env.homePath
+    /// Breadcrumbs for a location. Folder titles come from `FolderName` (as Finder shows them); the
+    /// home and volume segments keep their own titles.
+    static func segments(for loc: Location, home: String) -> [Segment] {
         let path = loc.path
         func symbol(_ name: String) -> NSImage? {
             NSImage(systemSymbolName: name, accessibilityDescription: nil)
@@ -154,7 +155,7 @@ final class PathBarView: NSView, NSTextFieldDelegate {
             var cur = home
             for part in rest {
                 cur += "/" + part
-                segs.append(Segment(title: String(part), image: nil, location: .file(cur)))
+                segs.append(Segment(title: FolderName.display(forPath: cur), image: nil, location: .file(cur)))
             }
             return segs
         }
@@ -173,14 +174,14 @@ final class PathBarView: NSView, NSTextFieldDelegate {
         var cur = ""
         for part in path.split(separator: "/") {
             cur += "/" + part
-            segs.append(Segment(title: String(part), image: nil, location: .file(cur)))
+            segs.append(Segment(title: FolderName.display(forPath: cur), image: nil, location: .file(cur)))
         }
         return segs
     }
 
     private func rebuild(for loc: Location) {
         crumbs.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        let segs = segments(for: loc)
+        let segs = Self.segments(for: loc, home: vm.app.env.homePath)
         let delay = vm.app.env.springDelay
         for (i, seg) in segs.enumerated() {
             if i > 0 {

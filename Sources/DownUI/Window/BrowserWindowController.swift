@@ -76,7 +76,7 @@ public final class BrowserWindowController: NSWindowController, NSWindowDelegate
         tokens.append(track { [weak self] in
             guard let self, let window = self.window else { return }
             let loc = vm.location
-            window.title = loc.path == vm.app.env.homePath ? UIStrings.home : DisplayName.sanitize(loc.name)
+            window.title = Self.title(for: loc, home: vm.app.env.homePath)
             window.representedURL = loc.isLocal ? loc.url : nil
             window.tab.title = window.title
         })
@@ -86,6 +86,12 @@ public final class BrowserWindowController: NSWindowController, NSWindowDelegate
             self.window?.toolbar?.validateVisibleItems()
             updateToolbarState()
         })
+    }
+
+    /// Window and tab title: "Home" for the home folder, otherwise the folder's name as Finder shows it.
+    static func title(for loc: Location, home: String) -> String {
+        if loc.path == home { return UIStrings.home }
+        return DisplayName.sanitize(loc.isLocal ? FolderName.display(forPath: loc.path) : loc.name)
     }
 
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
