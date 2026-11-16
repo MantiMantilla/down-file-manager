@@ -6,3 +6,4 @@ xcuserdata/
 /Packages
 default.profraw
 Config/Local.xcconfig
+*.xcworkspace/xcuserdata/
