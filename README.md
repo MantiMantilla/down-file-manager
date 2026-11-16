@@ -81,3 +81,8 @@ MVVM with one-way data flow: **View → Action → ViewModel → State → View*
 ## License
 
 MIT (see LICENSE).
+
+
+## Attribution
+
+Alejandro Mantilla 2026
