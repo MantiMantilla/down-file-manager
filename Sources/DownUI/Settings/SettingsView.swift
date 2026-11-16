@@ -134,7 +134,7 @@ final class SettingsWindowController: NSWindowController {
         let window = NSWindow(contentViewController: hosting)
         window.title = "Down Settings"
         window.styleMask = [.titled, .closable]
-        // No frame autosave: showSettings() centers the window on every open, and the size comes from
+        // No frame autosave: showSettings() centers the window when it's created, and the size comes from
         // SettingsView. (Builds before this saved a ~100 pt tall frame as "DownSettings"; it's now ignored.)
         super.init(window: window)
     }
