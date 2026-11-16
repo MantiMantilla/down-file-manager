@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>Down</string>
+    <key>CFBundleIdentifier</key>
+    <string>app.down.Down</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>Down</string>
+    <key>CFBundleDisplayName</key>
+    <string>Down</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleIconFile</key>
+    <string>Down</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>26.0</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.productivity</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSSupportsAutomaticTermination</key>
+    <false/>
+    <key>NSSupportsSuddenTermination</key>
+    <false/>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>Down needs access to your Desktop folder to show and manage its files.</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>Down needs access to your Documents folder to show and manage its files.</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>Down needs access to your Downloads folder to show and manage its files.</string>
+    <key>NSRemovableVolumesUsageDescription</key>
+    <string>Down needs access to external drives to show and manage their files.</string>
+    <key>NSNetworkVolumesUsageDescription</key>
+    <string>Down needs access to network volumes to show and manage their files.</string>
+</dict>
+</plist>

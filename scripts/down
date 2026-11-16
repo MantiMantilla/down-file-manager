@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Terminal launcher: runs Down in the foreground so stderr logging reaches this terminal.
+#   down [path] [--log-level debug] [--debug]
+# `open Down.app` detaches the process, so its stderr never reaches the terminal.
+set -euo pipefail
+
+for candidate in "$HOME/Applications/Down.app" "/Applications/Down.app" "$(cd "$(dirname "$0")/.." && pwd)/build/Down.app"; do
+  if [[ -x "$candidate/Contents/MacOS/Down" ]]; then
+    exec "$candidate/Contents/MacOS/Down" "$@"
+  fi
+done
+echo "down: Down.app not found (run 'make install')" >&2
+exit 1

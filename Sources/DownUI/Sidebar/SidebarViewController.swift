@@ -1,0 +1,522 @@
+import AppKit
+import DownCore
+
+@MainActor
+protocol SidebarHost: AnyObject {
+    func openInNewTab(_ location: Location)
+}
+
+@MainActor
+final class SidebarNode: NSObject {
+    enum Kind: Equatable {
+        case section(String)
+        case place
+        case pin(UUID)
+        case volume(ejectable: Bool)
+        case trash
+    }
+
+    let kind: Kind
+    let title: String
+    let symbol: String?
+    let path: String?
+    var children: [SidebarNode] = []
+
+    init(kind: Kind, title: String, symbol: String? = nil, path: String? = nil, children: [SidebarNode] = []) {
+        self.kind = kind
+        self.title = title
+        self.symbol = symbol
+        self.path = path
+        self.children = children
+    }
+
+    var isSection: Bool { if case .section = kind { true } else { false } }
+    var location: Location? { path.map(Location.file) }
+}
+
+final class SidebarOutlineView: NSOutlineView {
+    var onDragEnded: ((Bool) -> Void)?
+    var onDragExited: (() -> Void)?
+
+    override func draggingExited(_ sender: (any NSDraggingInfo)?) {
+        super.draggingExited(sender)
+        onDragExited?()
+    }
+    private var performed = false
+
+    override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
+        performed = false
+        return super.draggingEntered(sender)
+    }
+
+    override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        performed = super.performDragOperation(sender)
+        return performed
+    }
+
+    override func draggingEnded(_ sender: any NSDraggingInfo) {
+        super.draggingEnded(sender)
+        onDragEnded?(performed)
+    }
+
+    override func menu(for event: NSEvent) -> NSMenu? {
+        let row = self.row(at: convert(event.locationInWindow, from: nil))
+        guard row >= 0 else { return nil }
+        menuRow = row
+        return super.menu(for: event)
+    }
+
+    var menuRow = -1
+}
+
+@MainActor
+final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NSOutlineViewDelegate, NSMenuDelegate {
+    private let vm: BrowserViewModel
+    weak var host: (any SidebarHost)?
+    private let outline = SidebarOutlineView()
+    private var roots: [SidebarNode] = []
+    private var tokens: [ObservationToken] = []
+    private let springLoader: SpringLoader
+    private var suppressSelection = false
+    private var workspaceObservers: [NSObjectProtocol] = []
+    private static let pinDragType = NSPasteboard.PasteboardType("app.down.pin")
+    private let log: Logger
+
+    init(vm: BrowserViewModel) {
+        self.vm = vm
+        springLoader = SpringLoader(delay: vm.app.env.springDelay)
+        log = vm.app.env.logger(.ui)
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
+
+    override func loadView() {
+        let column = NSTableColumn(identifier: .init("main"))
+        outline.addTableColumn(column)
+        outline.outlineTableColumn = column
+        outline.headerView = nil
+        outline.style = .sourceList
+        outline.floatsGroupRows = false
+        outline.rowSizeStyle = .default
+        outline.indentationPerLevel = 0
+        outline.dataSource = self
+        outline.delegate = self
+        outline.registerForDraggedTypes(DragSupport.acceptedTypes + [Self.pinDragType])
+        outline.setDraggingSourceOperationMask(.move, forLocal: true)
+        outline.setDraggingSourceOperationMask([.copy, .link, .generic], forLocal: false)
+        outline.draggingDestinationFeedbackStyle = .sourceList
+        outline.onDragEnded = { [weak self] performed in self?.dragEnded(performed: performed) }
+        outline.onDragExited = { [weak self] in self?.springLoader.cancel() }
+        outline.target = self
+        outline.action = #selector(rowClicked(_:))
+        let menu = NSMenu()
+        menu.delegate = self
+        outline.menu = menu
+
+        let scroll = NSScrollView()
+        scroll.documentView = outline
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = true
+        scroll.drawsBackground = false
+        view = scroll
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        tokens.append(track { [weak self] in
+            guard let self else { return }
+            _ = vm.app.settings.pins
+            rebuild()
+        })
+        tokens.append(track { [weak self] in
+            guard let self else { return }
+            let loc = vm.location
+            selectRow(for: loc)
+        })
+        let center = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.didMountNotification, NSWorkspace.didUnmountNotification, NSWorkspace.didRenameVolumeNotification] {
+            workspaceObservers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
+                let name = note.name.rawValue
+                MainActor.assumeIsolated {
+                    self?.log.info("volumes changed (\(name))")
+                    self?.rebuild()
+                }
+            })
+        }
+    }
+
+    deinit {
+        MainActor.assumeIsolated {
+            tokens.forEach { $0.cancel() }
+            workspaceObservers.forEach { NSWorkspace.shared.notificationCenter.removeObserver($0) }
+        }
+    }
+
+    // MARK: - Model
+
+    private func rebuild() {
+        let home = vm.app.env.homePath
+        let fm = FileManager.default
+        var places = [SidebarNode(kind: .place, title: "Home", symbol: "house", path: home)]
+        for (name, symbol) in [("Desktop", "menubar.dock.rectangle"), ("Documents", "doc"), ("Downloads", "arrow.down.circle"),
+                               ("Pictures", "photo"), ("Music", "music.note"), ("Movies", "film")] {
+            let p = home + "/" + name
+            if fm.fileExists(atPath: p) { places.append(SidebarNode(kind: .place, title: name, symbol: symbol, path: p)) }
+        }
+        places.append(SidebarNode(kind: .place, title: "Applications", symbol: "square.grid.3x3", path: "/Applications"))
+
+        let pins = vm.app.settings.pins.map { pin in
+            SidebarNode(kind: .pin(pin.id), title: pin.name, symbol: "folder", path: vm.app.resolvedPath(for: pin))
+        }
+
+        var devices: [SidebarNode] = []
+        let keys: [URLResourceKey] = [.volumeLocalizedNameKey, .volumeIsEjectableKey, .volumeIsRemovableKey,
+                                      .volumeIsInternalKey, .volumeIsRootFileSystemKey]
+        for url in fm.mountedVolumeURLs(includingResourceValuesForKeys: keys, options: [.skipHiddenVolumes]) ?? [] {
+            let v = try? url.resourceValues(forKeys: Set(keys))
+            let isRoot = v?.volumeIsRootFileSystem ?? false
+            let ejectable = (v?.volumeIsEjectable ?? false) || (v?.volumeIsRemovable ?? false) || !(v?.volumeIsInternal ?? true)
+            let symbol = isRoot ? "internaldrive" : (ejectable ? "externaldrive" : "internaldrive")
+            devices.append(SidebarNode(kind: .volume(ejectable: ejectable && !isRoot),
+                                       title: v?.volumeLocalizedName ?? url.lastPathComponent,
+                                       symbol: symbol, path: url.path(percentEncoded: false)))
+        }
+
+        let trash = SidebarNode(kind: .trash, title: "Trash", symbol: "trash", path: home + "/.Trash")
+
+        roots = [SidebarNode(kind: .section("Places"), title: "Places", children: places)]
+        // Always show the Pinned section so there's somewhere to drop folders.
+        roots.append(SidebarNode(kind: .section("Pinned"), title: "Pinned", children: pins))
+        roots.append(SidebarNode(kind: .section("Devices"), title: "Devices", children: devices))
+        roots.append(SidebarNode(kind: .section("Other"), title: "Other", children: [trash]))
+
+        suppressSelection = true
+        outline.reloadData()
+        roots.forEach { outline.expandItem($0) }
+        suppressSelection = false
+        selectRow(for: vm.location)
+    }
+
+    private var pinnedSection: SidebarNode? { roots.first { $0.kind == .section("Pinned") } }
+
+    private func selectRow(for loc: Location) {
+        suppressSelection = true
+        defer { suppressSelection = false }
+        for section in roots {
+            for node in section.children where node.path == loc.path {
+                let row = outline.row(forItem: node)
+                if row >= 0 { outline.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false) }
+                return
+            }
+        }
+        outline.deselectAll(nil)
+    }
+
+    // MARK: - Data source / delegate
+
+    func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
+        (item as? SidebarNode)?.children.count ?? roots.count
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
+        (item as? SidebarNode)?.children[index] ?? roots[index]
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
+        (item as? SidebarNode)?.isSection ?? false
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, isGroupItem item: Any) -> Bool {
+        (item as? SidebarNode)?.isSection ?? false
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, shouldSelectItem item: Any) -> Bool {
+        !((item as? SidebarNode)?.isSection ?? true)
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, shouldShowOutlineCellForItem item: Any) -> Bool { false }
+
+    func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
+        guard let node = item as? SidebarNode else { return nil }
+        if node.isSection {
+            let cell = (outlineView.makeView(withIdentifier: .init("header"), owner: self) as? NSTableCellView) ?? {
+                let c = NSTableCellView()
+                c.identifier = .init("header")
+                let t = NSTextField(labelWithString: "")
+                t.translatesAutoresizingMaskIntoConstraints = false
+                c.addSubview(t)
+                c.textField = t
+                NSLayoutConstraint.activate([
+                    t.leadingAnchor.constraint(equalTo: c.leadingAnchor, constant: 2),
+                    t.centerYAnchor.constraint(equalTo: c.centerYAnchor),
+                ])
+                return c
+            }()
+            cell.textField?.stringValue = node.title
+            return cell
+        }
+        let cell = (outlineView.makeView(withIdentifier: .init("row"), owner: self) as? SidebarRowView) ?? SidebarRowView()
+        cell.configure(node: node) { [weak self] in self?.eject(node) }
+        return cell
+    }
+
+    func outlineViewSelectionDidChange(_ notification: Notification) {
+        guard !suppressSelection else { return }
+        navigateToSelected()
+    }
+
+    @objc private func rowClicked(_ sender: Any?) {
+        // Clicking the already-selected row navigates again (e.g. back to Home after browsing elsewhere).
+        if outline.clickedRow >= 0, outline.clickedRow == outline.selectedRow { navigateToSelected() }
+    }
+
+    private func navigateToSelected() {
+        guard let node = outline.item(atRow: outline.selectedRow) as? SidebarNode, let loc = node.location else { return }
+        if NSEvent.modifierFlags.contains(.command) {
+            host?.openInNewTab(loc)
+        } else if loc != vm.location {
+            vm.send(.navigate(loc))
+        }
+    }
+
+    // MARK: - Context menu
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+        guard let node = outline.item(atRow: outline.menuRow) as? SidebarNode, !node.isSection else { return }
+        menu.addItem(withTitle: "Open in New Tab", action: #selector(menuOpenInNewTab(_:)), keyEquivalent: "").representedObject = node
+        switch node.kind {
+        case .pin:
+            menu.addItem(.separator())
+            menu.addItem(withTitle: "Rename…", action: #selector(menuRenamePin(_:)), keyEquivalent: "").representedObject = node
+            menu.addItem(withTitle: "Unpin", action: #selector(menuUnpin(_:)), keyEquivalent: "").representedObject = node
+        case .volume(let ejectable) where ejectable:
+            menu.addItem(.separator())
+            menu.addItem(withTitle: "Eject “\(node.title)”", action: #selector(menuEject(_:)), keyEquivalent: "").representedObject = node
+        case .place:
+            menu.addItem(.separator())
+            menu.addItem(withTitle: "Pin to Sidebar", action: #selector(menuPin(_:)), keyEquivalent: "").representedObject = node
+        default:
+            break
+        }
+        menu.items.forEach { $0.target = self }
+    }
+
+    @objc private func menuOpenInNewTab(_ sender: NSMenuItem) {
+        guard let loc = (sender.representedObject as? SidebarNode)?.location else { return }
+        host?.openInNewTab(loc)
+    }
+
+    @objc private func menuPin(_ sender: NSMenuItem) {
+        guard let node = sender.representedObject as? SidebarNode, let path = node.path else { return }
+        vm.app.send(.addPin(path: path, name: node.title, at: nil))
+    }
+
+    @objc private func menuUnpin(_ sender: NSMenuItem) {
+        guard case .pin(let id) = (sender.representedObject as? SidebarNode)?.kind else { return }
+        vm.app.send(.removePin(id))
+    }
+
+    @objc private func menuRenamePin(_ sender: NSMenuItem) {
+        guard let node = sender.representedObject as? SidebarNode, case .pin(let id) = node.kind else { return }
+        let alert = NSAlert()
+        alert.messageText = "Rename Pinned Folder"
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
+        let field = NSTextField(string: node.title)
+        field.frame = NSRect(x: 0, y: 0, width: 260, height: 24)
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        guard let window = view.window else { return }
+        alert.beginSheetModal(for: window) { [weak self] response in
+            guard response == .alertFirstButtonReturn else { return }
+            MainActor.assumeIsolated { self?.vm.app.send(.renamePin(id, field.stringValue)) }
+        }
+    }
+
+    @objc private func menuEject(_ sender: NSMenuItem) {
+        guard let node = sender.representedObject as? SidebarNode else { return }
+        eject(node)
+    }
+
+    private func eject(_ node: SidebarNode) {
+        guard let path = node.path else { return }
+        let log = vm.app.env.logger(.volumes)
+        if vm.location.path.hasPrefix(path) { vm.send(.goHome) }
+        do {
+            try NSWorkspace.shared.unmountAndEjectDevice(at: URL(filePath: path))
+            log.info("ejected \(path: path)")
+        } catch {
+            log.error("eject failed for \(path: path): \(error.localizedDescription)")
+            let alert = NSAlert(error: error)
+            alert.messageText = "“\(node.title)” couldn't be ejected"
+            alert.informativeText = "It may be in use by another app. \(error.localizedDescription)"
+            alert.runModal()
+        }
+    }
+
+    // MARK: - Drag source (reordering pins)
+
+    func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> (any NSPasteboardWriting)? {
+        guard let node = item as? SidebarNode, case .pin(let id) = node.kind else { return nil }
+        let pb = NSPasteboardItem()
+        pb.setString(id.uuidString, forType: Self.pinDragType)
+        if let path = node.path { pb.setString(URL(filePath: path).absoluteString, forType: .fileURL) }
+        return pb
+    }
+
+    // MARK: - Drop destination
+
+    func outlineView(_ outlineView: NSOutlineView, validateDrop info: any NSDraggingInfo, proposedItem item: Any?,
+                     proposedChildIndex index: Int) -> NSDragOperation {
+        let node = item as? SidebarNode
+        let pb = info.draggingPasteboard
+
+        // Reordering a pin: only between rows of the Pinned section.
+        if pb.types?.contains(Self.pinDragType) == true {
+            springLoader.cancel()
+            guard let section = pinnedSection else { return [] }
+            if node === section, index != NSOutlineViewDropOnItemIndex { return .move }
+            if let node, case .pin = node.kind, let i = section.children.firstIndex(of: node) {
+                outlineView.setDropItem(section, dropChildIndex: i)
+                return .move
+            }
+            return []
+        }
+
+        let urls = DragSupport.fileURLs(from: pb)
+
+        // Between rows in Pinned (or onto the header) → pin folders there.
+        if let section = pinnedSection, node === section {
+            springLoader.cancel()
+            guard !urls.isEmpty, urls.allSatisfy({ isDirectory($0) }) else { return [] }
+            if index == NSOutlineViewDropOnItemIndex { outlineView.setDropItem(section, dropChildIndex: section.children.count) }
+            return .link
+        }
+
+        // Onto a row → spring-load there and/or drop into it.
+        guard let node, !node.isSection, let path = node.path, index == NSOutlineViewDropOnItemIndex else {
+            springLoader.cancel()
+            return []
+        }
+        springLoader.hover(path) { [weak self] in
+            guard let self, let loc = node.location else { return }
+            vm.send(.springLoad(loc))
+        }
+        if urls.isEmpty { return DragSupport.promises(from: pb).isEmpty || node.kind == .trash ? [] : .copy }
+        if node.kind == .trash { return .delete }
+        return DragSupport.dragOperation(DragSupport.operation(for: info, urls: urls, destination: path))
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, acceptDrop info: any NSDraggingInfo, item: Any?, childIndex index: Int) -> Bool {
+        springLoader.cancel()
+        let node = item as? SidebarNode
+        let pb = info.draggingPasteboard
+        let id = ActionID.next()
+
+        if let raw = pb.string(forType: Self.pinDragType), let pinID = UUID(uuidString: raw),
+           let from = vm.app.settings.pins.firstIndex(where: { $0.id == pinID }) {
+            vm.app.send(.movePin(from: from, to: index), id: id)
+            return true
+        }
+
+        let urls = DragSupport.fileURLs(from: pb)
+        if let section = pinnedSection, node === section {
+            for (offset, url) in urls.enumerated() where isDirectory(url) {
+                vm.app.send(.addPin(path: url.path(percentEncoded: false), name: nil, at: index + offset), id: id)
+            }
+            return true
+        }
+
+        guard let node, let path = node.path else { return false }
+        if node.kind == .trash {
+            let log = vm.app.env.logger(.ops)
+            for url in urls {
+                do {
+                    try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                    log.info("trashed \(url: url)", actionID: id)
+                } catch {
+                    log.error("trash failed for \(url: url): \(error.localizedDescription)", actionID: id)
+                }
+            }
+            return true
+        }
+        if urls.isEmpty {
+            let promises = DragSupport.promises(from: pb)
+            guard !promises.isEmpty else { return false }
+            DropPerformer.receivePromises(promises, into: path, hub: vm.app.env.logHub, id: id)
+            return true
+        }
+        guard let op = DragSupport.operation(for: info, urls: urls, destination: path) else { return false }
+        DropPerformer.transfer(op, urls: urls, into: path, hub: vm.app.env.logHub, id: id)
+        vm.send(.dragEnded, id: id)
+        return true
+    }
+
+    private func dragEnded(performed: Bool) {
+        springLoader.cancel()
+        if !performed && vm.springOrigin != nil { vm.send(.springLoadCancelled) }
+    }
+
+    private func isDirectory(_ url: URL) -> Bool {
+        var isDir: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path(percentEncoded: false), isDirectory: &isDir) && isDir.boolValue
+    }
+}
+
+/// Sidebar row: symbol + title (+ eject button for removable volumes).
+final class SidebarRowView: NSTableCellView {
+    private let icon = NSImageView()
+    private let title = NSTextField(labelWithString: "")
+    private let ejectButton = NSButton()
+    private var onEject: (() -> Void)?
+
+    init() {
+        super.init(frame: .zero)
+        identifier = .init("row")
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.symbolConfiguration = .init(scale: .medium)
+        title.translatesAutoresizingMaskIntoConstraints = false
+        title.lineBreakMode = .byTruncatingTail
+        ejectButton.translatesAutoresizingMaskIntoConstraints = false
+        ejectButton.image = NSImage(systemSymbolName: "eject.fill", accessibilityDescription: "Eject")
+        ejectButton.isBordered = false
+        ejectButton.contentTintColor = .secondaryLabelColor
+        ejectButton.target = self
+        ejectButton.action = #selector(ejectClicked)
+        ejectButton.setContentHuggingPriority(.required, for: .horizontal)
+        addSubview(icon)
+        addSubview(title)
+        addSubview(ejectButton)
+        imageView = icon
+        textField = title
+        NSLayoutConstraint.activate([
+            icon.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
+            icon.centerYAnchor.constraint(equalTo: centerYAnchor),
+            icon.widthAnchor.constraint(equalToConstant: 18),
+            title.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 6),
+            title.centerYAnchor.constraint(equalTo: centerYAnchor),
+            title.trailingAnchor.constraint(lessThanOrEqualTo: ejectButton.leadingAnchor, constant: -4),
+            ejectButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+            ejectButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+        ])
+    }
+
+    @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
+
+    @MainActor
+    func configure(node: SidebarNode, onEject: @escaping () -> Void) {
+        icon.image = node.symbol.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }
+        title.stringValue = DisplayName.sanitize(node.title)
+        toolTip = node.path
+        if case .volume(let ejectable) = node.kind, ejectable {
+            ejectButton.isHidden = false
+        } else {
+            ejectButton.isHidden = true
+        }
+        self.onEject = onEject
+    }
+
+    @objc private func ejectClicked() { onEject?() }
+}
