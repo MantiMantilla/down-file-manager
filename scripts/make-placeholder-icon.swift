@@ -7,7 +7,8 @@
 // when there is one; this only exists so the app isn't iconless.
 import AppKit
 
-let root = URL(filePath: CommandLine.arguments[0]).deletingLastPathComponent().deletingLastPathComponent()
+// The repo root, from this file's own path (resolved against the working directory if relative).
+let root = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
 let iconSet = root.appending(path: "App/Assets.xcassets/AppIcon.appiconset")
 
 func render(pixels: Int) -> Data {

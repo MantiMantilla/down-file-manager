@@ -1,19 +1,41 @@
 .PHONY: build app debug-app run test test-integration test-all test-xcode test-tsan bench coverage install clean
 
-# Xcode is required (the Command Line Tools alone can't build the app target). Override to use another Xcode.
-DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
-export DEVELOPER_DIR
+# Xcode is required (the Command Line Tools alone can't build the app target). The Xcode chosen with
+# `xcode-select -s` is used; only when that is the Command Line Tools does this fall back to
+# /Applications/Xcode.app. Set DEVELOPER_DIR to pick another one.
+ifeq ($(origin DEVELOPER_DIR),undefined)
+  ifneq ($(findstring CommandLineTools,$(shell xcode-select -p 2>/dev/null)),)
+    DEVELOPER_DIR := /Applications/Xcode.app/Contents/Developer
+    export DEVELOPER_DIR
+  endif
+endif
+
+# A stable signing identity keeps macOS privacy grants across rebuilds (see Config/Local.xcconfig.example).
+# Without a Config/Local.xcconfig, use DOWN_SIGN_IDENTITY, or "Down Local Signing" when it's in the keychain
+# (scripts/make-dev-cert.sh). An explicit DOWN_SIGN_IDENTITY wins over Local.xcconfig. Empty: ad-hoc.
+ifeq ($(origin DOWN_SIGN_IDENTITY),undefined)
+  ifeq ($(wildcard Config/Local.xcconfig),)
+    DOWN_SIGN_IDENTITY := $(shell security find-identity -v -p codesigning 2>/dev/null \
+      | grep -q '"Down Local Signing"' && echo 'Down Local Signing')
+  endif
+endif
+ifneq ($(DOWN_SIGN_IDENTITY),)
+  # Same as option B in Config/Local.xcconfig.example.
+  SIGNING := CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$(DOWN_SIGN_IDENTITY)" DEVELOPMENT_TEAM= \
+    ENABLE_DEBUG_DYLIB=NO
+endif
 
 DERIVED_DATA := build/xcode
+# Native architecture only, like the old scripts/bundle.sh: Release would otherwise build universal.
 XCODEBUILD := xcodebuild -project Down.xcodeproj -scheme Down -derivedDataPath $(DERIVED_DATA) \
-	-destination 'platform=macOS,arch=$(shell uname -m)'
+	-destination 'platform=macOS,arch=$(shell uname -m)' ONLY_ACTIVE_ARCH=YES $(SIGNING)
 
 # Builds Down.app with Xcode and copies it to build/Down.app (used by run, install and scripts/down).
 define build_app
 	$(XCODEBUILD) -configuration $(1) build
 	rm -rf build/Down.app
 	ditto "$(DERIVED_DATA)/Build/Products/$(1)/Down.app" build/Down.app
-	@echo "Built build/Down.app ($(1))"
+	@echo "Built build/Down.app ($(1), signed with $(or $(DOWN_SIGN_IDENTITY),the Config/*.xcconfig identity))"
 endef
 
 build:
@@ -71,4 +93,4 @@ install: app
 	@echo "Installed ~/Applications/Down.app and ~/.local/bin/down"
 
 clean:
-	rm -rf .build build $(DERIVED_DATA)
+	rm -rf .build build

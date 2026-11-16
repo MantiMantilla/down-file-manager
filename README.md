@@ -26,7 +26,7 @@ make test-xcode   # the same tests through the Xcode scheme
 make test-tsan    # unit + integration tests under Thread Sanitizer
 ```
 
-The Makefile builds with `xcodebuild` into `build/xcode` and copies the app to `build/Down.app`. It uses `/Applications/Xcode.app` unless you set `DEVELOPER_DIR`.
+The Makefile builds with `xcodebuild` into `build/xcode` and copies the app to `build/Down.app`. It uses the Xcode chosen with `xcode-select` (falling back to `/Applications/Xcode.app` when that is the Command Line Tools), or `DEVELOPER_DIR` if set. `make app` builds for this Mac's architecture only.
 
 ### Xcode
 
@@ -41,7 +41,7 @@ Signing settings live in `Config/Down.xcconfig`. By default builds are signed ad
 macOS remembers privacy grants (Desktop, Documents, external drives) per code signature. An ad-hoc signature changes on every build, so you're asked again after each rebuild. To keep the grants, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` (git-ignored) and enable one option:
 
 - **A free personal team.** Add your Apple ID in Xcode → Settings → Accounts, then set `DEVELOPMENT_TEAM`. Don't commit a team ID.
-- **A self-signed identity** in your login keychain, created with `scripts/make-dev-cert.sh`.
+- **A self-signed identity** in your login keychain, created with `scripts/make-dev-cert.sh`. The Makefile picks it up on its own when there's no `Local.xcconfig`; you only need option B to use it from Xcode. `DOWN_SIGN_IDENTITY="…" make app` signs with any other identity.
 
 Switching identity changes the app's code requirement, so macOS asks for each permission once more. To clear the stale grants, run `tccutil reset All app.down.Down`.
 
