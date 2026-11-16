@@ -15,7 +15,10 @@ struct SettingsView: View {
             AdvancedPane(app: app)
                 .tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }
         }
-        .frame(width: 520)
+        // An explicit height: the panes are grouped Forms, which scroll and so have no height of their own
+        // (sized from them, the window opened about 100 pt tall). Tall enough for the Shortcuts pane,
+        // which doesn't scroll; SettingsWindowTests checks that it fits.
+        .frame(width: 520, height: 460)
         .scenePadding()
     }
 }
@@ -51,7 +54,7 @@ private struct GeneralPane: View {
     }
 }
 
-private struct ShortcutsPane: View {
+struct ShortcutsPane: View {
     let app: AppViewModel
 
     var body: some View {
@@ -125,24 +128,14 @@ private struct AdvancedPane: View {
 
 @MainActor
 final class SettingsWindowController: NSWindowController {
-    /// The window's content size. The panes are grouped Forms, which scroll and so have no height of
-    /// their own: sized to its content, the window came out about 100 pt tall.
-    static let contentSize = NSSize(width: 560, height: 420)
-
     init(app: AppViewModel) {
+        // The hosting controller sizes the window from SettingsView, which sets its own size.
         let hosting = NSHostingController(rootView: SettingsView(app: app))
-        // Don't let the hosting controller size the window from the Forms' (near-zero) ideal height.
-        hosting.sizingOptions = []
         let window = NSWindow(contentViewController: hosting)
         window.title = "Down Settings"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(Self.contentSize)
-        window.setFrameAutosaveName("DownSettings")
-        // That restored any saved frame. The window isn't resizable, so keep only its position: a saved
-        // size can be the old ~100 pt one.
-        let topLeft = NSPoint(x: window.frame.minX, y: window.frame.maxY)
-        window.setContentSize(Self.contentSize)
-        window.setFrameTopLeftPoint(topLeft)
+        // No frame autosave: showSettings() centers the window on every open, and the size comes from
+        // SettingsView. (Builds before this saved a ~100 pt tall frame as "DownSettings"; it's now ignored.)
         super.init(window: window)
     }
 
