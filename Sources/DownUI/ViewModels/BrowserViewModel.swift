@@ -186,6 +186,13 @@ public final class BrowserViewModel {
             log.debug("action \(action)", actionID: id)
         }
 
+        // A deliberate navigation ends any spring-loaded detour (e.g. one left behind by a drag from
+        // another app that was cancelled; only drags this list starts report their end).
+        switch action {
+        case .navigate, .goBack, .goForward, .goUp, .goHome: springOrigin = nil
+        default: break
+        }
+
         switch action {
         case .navigate(let target):
             navigate(to: target, id: id)

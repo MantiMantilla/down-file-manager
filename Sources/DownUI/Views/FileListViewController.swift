@@ -7,10 +7,16 @@ protocol FileViewHost: AnyObject {
     func beginLocationEntry(prefill: String?)
 }
 
-/// NSTableView that forwards GNOME-style typing (`/`, `~`) and reports drag cancellation.
+/// NSTableView that forwards GNOME-style typing (`/`, `~`) and reports when a drag leaves it.
+///
+/// Do NOT override `draggingEnded(_:)` (or `draggingEntered`/`performDragOperation` to feed it):
+/// overriding `draggingEnded(_:)` on an NSTableView, even with a plain call to super, stops AppKit
+/// from ever finishing drags that start in this table. The table then believes its first drag is
+/// still running and turns every later press into a drag-select. (Found with a standalone probe:
+/// a plain table plus only that override reproduces it.) The end of our own drags is reported by
+/// `tableView(_:draggingSession:endedAt:operation:)` instead. `DragOverrideTests` guards this.
 final class FileTableView: NSTableView {
     var onTypeToLocation: ((String) -> Void)?
-    var onDragEnded: ((_ performed: Bool) -> Void)?
     /// The drag left the table (e.g. onto the margin or an overlay): any pending spring-load must stop.
     var onDragExited: (() -> Void)?
     /// Trace hook for mouse/drag decisions (Debug Console, category `dnd`, level trace).
@@ -65,7 +71,6 @@ final class FileTableView: NSTableView {
         trace?("canDragRows \(Self.ranges(rowIndexes)) → \(allowed)")
         return allowed
     }
-    private var dropPerformed = false
 
     /// Anchor/cursor from the last keyboard move (see `KeyboardNavigation.State`).
     private var keyboardState: KeyboardNavigation.State?
@@ -108,26 +113,9 @@ final class FileTableView: NSTableView {
         scrollRowToVisible(state.cursor)
     }
 
-    override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
-        dropPerformed = false
-        return super.draggingEntered(sender)
-    }
-
-    override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
-        dropPerformed = super.performDragOperation(sender)
-        return dropPerformed
-    }
-
     override func draggingExited(_ sender: (any NSDraggingInfo)?) {
         super.draggingExited(sender)
         onDragExited?()
-    }
-
-    /// Sent to the destination under the cursor when the session ends (also for drags from other apps).
-    override func draggingEnded(_ sender: any NSDraggingInfo) {
-        super.draggingEnded(sender)
-        onDragEnded?(dropPerformed)
-        dropPerformed = false
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
@@ -234,7 +222,6 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
         tableView.registerForDraggedTypes(DragSupport.acceptedTypes)
 
         tableView.onTypeToLocation = { [weak self] text in self?.host?.beginLocationEntry(prefill: text) }
-        tableView.onDragEnded = { [weak self] performed in self?.dragEnded(performed: performed) }
         tableView.trace = { [weak self] message in self?.log.trace("\(message)") }
         tableView.onDragExited = { [weak self] in
             self?.springLoader.cancel()
@@ -497,11 +484,12 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
 
     func tableView(_ tableView: NSTableView, draggingSession session: NSDraggingSession,
                    willBeginAt screenPoint: NSPoint, forRowIndexes rowIndexes: IndexSet) {
-        log.debug("drag started with \(rowIndexes.count) item(s)")
+        log.debug("drag started with \(rowIndexes.count) item(s) (session \(session.draggingSequenceNumber))")
     }
 
     func tableView(_ tableView: NSTableView, draggingSession session: NSDraggingSession,
                    endedAt screenPoint: NSPoint, operation: NSDragOperation) {
+        log.debug("drag ended (session \(session.draggingSequenceNumber), \(operation.isEmpty ? "cancelled or refused" : "dropped"))")
         dragEnded(performed: !operation.isEmpty)
     }
 

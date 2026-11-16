@@ -167,6 +167,22 @@ struct BrowserViewModelTests {
         #expect(h.logs.contains("drag cancelled", category: .dnd))
     }
 
+    @Test func deliberateNavigationClearsALeftoverSpringLoadDetour() async {
+        // A drag from another app that spring-loaded us and was then cancelled never reports its end.
+        let h = Harness()
+        let vm = await h.browser()
+        vm.send(.springLoad(.file("/home/Documents")))
+        await vm.settle()
+        #expect(vm.springOrigin?.path == "/home")
+        vm.send(.navigate(.file("/tmp")))
+        await vm.settle()
+        #expect(vm.springOrigin == nil)
+        // So a later cancelled drag doesn't jump back to that stale origin.
+        vm.send(.springLoadCancelled)
+        await vm.settle()
+        #expect(vm.location.path == "/tmp")
+    }
+
     @Test func completedDragKeepsSpringLoadedLocation() async {
         let h = Harness()
         let vm = await h.browser()

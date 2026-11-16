@@ -34,29 +34,14 @@ final class SidebarNode: NSObject {
     var location: Location? { path.map(Location.file) }
 }
 
+/// Sidebar outline. Like `FileTableView`, it must not override `draggingEnded(_:)`: doing so stops
+/// AppKit from finishing drags that start here (reordering pins). See `DragOverrideTests`.
 final class SidebarOutlineView: NSOutlineView {
-    var onDragEnded: ((Bool) -> Void)?
     var onDragExited: (() -> Void)?
 
     override func draggingExited(_ sender: (any NSDraggingInfo)?) {
         super.draggingExited(sender)
         onDragExited?()
-    }
-    private var performed = false
-
-    override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
-        performed = false
-        return super.draggingEntered(sender)
-    }
-
-    override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
-        performed = super.performDragOperation(sender)
-        return performed
-    }
-
-    override func draggingEnded(_ sender: any NSDraggingInfo) {
-        super.draggingEnded(sender)
-        onDragEnded?(performed)
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
@@ -106,7 +91,6 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
         outline.setDraggingSourceOperationMask(.move, forLocal: true)
         outline.setDraggingSourceOperationMask([.copy, .link, .generic], forLocal: false)
         outline.draggingDestinationFeedbackStyle = .sourceList
-        outline.onDragEnded = { [weak self] performed in self?.dragEnded(performed: performed) }
         outline.onDragExited = { [weak self] in self?.springLoader.cancel() }
         outline.target = self
         outline.action = #selector(rowClicked(_:))
@@ -452,11 +436,6 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
         DropPerformer.transfer(op, urls: urls, into: path, hub: vm.app.env.logHub, id: id)
         vm.send(.dragEnded, id: id)
         return true
-    }
-
-    private func dragEnded(performed: Bool) {
-        springLoader.cancel()
-        if !performed && vm.springOrigin != nil { vm.send(.springLoadCancelled) }
     }
 
     private func isDirectory(_ url: URL) -> Bool {
