@@ -49,6 +49,18 @@ struct LocalizationCatalogTests {
         }
     }
 
+    /// Short strings are ambiguous out of context, so they must say where they appear.
+    @Test(arguments: codeCatalogs)
+    func shortKeysHaveComments(path: String) throws {
+        let catalog = try StringCatalog(path)
+        for (key, entry) in catalog.strings {
+            let words = key.split(whereSeparator: \.isWhitespace).count
+            guard words <= 3 else { continue }
+            let comment = (entry["comment"] as? String)?.trimmingCharacters(in: .whitespaces) ?? ""
+            #expect(!comment.isEmpty, "\(path): \"\(key)\" needs a comment: String(localized:…, comment: \"where it appears\")")
+        }
+    }
+
     @Test(arguments: codeCatalogs)
     func pluralsDefineOther(path: String) throws {
         let catalog = try StringCatalog(path)
