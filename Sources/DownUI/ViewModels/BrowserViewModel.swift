@@ -139,7 +139,8 @@ public final class BrowserViewModel {
     public private(set) var springOrigin: Location?
     /// Transient message for the toast/overlay (e.g. "folder was removed").
     public private(set) var notice: String?
-    /// Bumped whenever `items` changes, so AppKit views can cheaply detect reloads.
+    /// Bumped whenever `items` actually changes (not when a refresh yields the same rows),
+    /// so AppKit views can cheaply detect reloads.
     public private(set) var itemsRevision = 0
     /// Path to select and reveal once the listing arrives (e.g. the folder we came up from).
     public private(set) var pendingReveal: String?
@@ -519,8 +520,13 @@ public final class BrowserViewModel {
     }
 
     private func setItems(_ new: [FileItem]) {
-        items = new
-        itemsRevision &+= 1
+        // Only a real change bumps the revision: every bump makes the list reload, which drops the
+        // selection AppKit is tracking. Changes to hidden items (e.g. ~/Library, which changes several
+        // times a second) re-sort to the same visible rows and must not reload the list.
+        if new != items {
+            items = new
+            itemsRevision &+= 1
+        }
         if !selection.isEmpty {
             let present = Set(new.lazy.map(\.path))
             let kept = selection.intersection(present)

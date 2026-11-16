@@ -22,10 +22,29 @@ final class FileTableView: NSTableView {
     /// Trace hook for mouse/drag decisions (Debug Console, category `dnd`, level trace).
     var trace: ((String) -> Void)?
 
+    /// Called once a mouse press finishes (after any drag-select), so deferred reloads can run.
+    var onMouseTrackingEnded: (() -> Void)?
+    /// True while AppKit tracks a press (click, ⇧/⌘-click, drag-select). The selection the user is
+    /// building lives only in the table until mouse-up, so reloading or syncing from the view model now
+    /// would throw it away (and reset AppKit's drag-select anchor).
+    private(set) var isTrackingMouse = false
+
+    /// Marks the start of a press. `mouseDown` brackets AppKit's tracking with this and `endMouseTracking()`.
+    func beginMouseTracking() { isTrackingMouse = true }
+
+    /// Marks the end of a press and lets deferred reloads and selection syncs run.
+    func endMouseTracking() {
+        guard isTrackingMouse else { return }
+        isTrackingMouse = false
+        onMouseTrackingEnded?()
+    }
+
     /// The last immediate collapse, so a following double-click can open the whole previous selection.
     private var lastCollapse: MouseSelection.Collapse?
 
     override func mouseDown(with event: NSEvent) {
+        beginMouseTracking()
+        defer { endMouseTracking() }
         let row = self.row(at: convert(event.locationInWindow, from: nil))
         let before = selectedRowIndexes
         trace?("mouseDown row=\(row) clicks=\(event.clickCount) mods=\(Self.modifierNames(event)) selection=\(Self.ranges(before)) selectedRow=\(selectedRow)")
@@ -223,6 +242,7 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
 
         tableView.onTypeToLocation = { [weak self] text in self?.host?.beginLocationEntry(prefill: text) }
         tableView.trace = { [weak self] message in self?.log.trace("\(message)") }
+        tableView.onMouseTrackingEnded = { [weak self] in self?.mouseTrackingEnded() }
         tableView.onDragExited = { [weak self] in
             self?.springLoader.cancel()
             self?.log.trace("drag exited the file list; spring-load cancelled")
@@ -247,8 +267,28 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
 
     // MARK: - Rendering
 
+    /// Reloads or selection syncs skipped while the mouse was down; run once the press ends.
+    private var syncDeferred = false
+
+    /// While the user is mid-press, model-driven updates wait (see `FileTableView.isTrackingMouse`).
+    private func deferWhileTrackingMouse(_ what: String) -> Bool {
+        guard tableView.isTrackingMouse else { return false }
+        if !syncDeferred { log.trace("\(what) deferred until mouse-up") }
+        syncDeferred = true
+        return true
+    }
+
+    private func mouseTrackingEnded() {
+        guard syncDeferred else { return }
+        syncDeferred = false
+        log.trace("mouse-up: applying deferred reload/selection sync")
+        reloadIfNeeded()
+        applySelection(vm.selection)
+    }
+
     private func reloadIfNeeded() {
         guard vm.itemsRevision != lastRevision else { return }
+        if deferWhileTrackingMouse("reload") { return }
         lastRevision = vm.itemsRevision
         let oldFirst = shownItems.first?.parentPath
         shownItems = vm.items
@@ -264,6 +304,7 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
     }
 
     private func applySelection(_ selection: Set<String>) {
+        if deferWhileTrackingMouse("selection sync") { return }
         syncingSelection = true
         defer { syncingSelection = false }
         var indexes = IndexSet()
