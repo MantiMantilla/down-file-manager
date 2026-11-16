@@ -87,7 +87,7 @@ public enum TypeCache {
         let type = UTType(filenameExtension: key)
         let fallback = key.isEmpty
             ? String(localized: "Document", bundle: .module, comment: "Kind column: a file with no extension and no known type")
-            : String(localized: "\(key.uppercased()) file", bundle: .module,
+            : String(localized: "\(DisplayName.sanitize(key.uppercased())) file", bundle: .module,
                      comment: "Kind column: a file of unknown type, named by its extension (e.g. “XYZ file”)")
         let entry = Entry(isPackage: false, description: type?.localizedDescription ?? fallback)
         fileCache.withLock { $0[key] = entry }

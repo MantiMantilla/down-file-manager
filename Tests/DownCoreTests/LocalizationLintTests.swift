@@ -4,6 +4,10 @@ import Testing
 /// Static checks that keep user-facing text going through the String Catalogs. They read the sources
 /// (no build, no dependencies), so they are a backstop for the usual mistakes, not a proof that every
 /// string is localized. `make l10n-check` keeps the catalogs in step with the code.
+///
+/// Known limits: they work line by line, so a sink and its literal must start on the same line (a
+/// multi-line `"""` literal that opens there is followed to its end), and literals passed to other
+/// functions (`addColumn(_, "Name")`) or returned from model code aren't seen.
 enum LocalizationLint {
     struct Finding: CustomStringConvertible {
         let file: String
@@ -22,27 +26,31 @@ enum LocalizationLint {
     /// A line ending in this comment is skipped (for the rare literal that must not be translated).
     static let optOut = "l10n-ignore"
 
+    static func isOptedOut(_ line: String) -> Bool {
+        line.trimmingCharacters(in: .whitespaces).hasSuffix(optOut)
+    }
+
     /// Calls that look up a localized string.
     private static let localizedCalls = ["String(localized:", "AttributedString(localized:", "LocalizedStringResource(",
                                          "NSLocalizedString("]
 
-    /// Assignments whose whole right-hand side is display text.
-    private static var propertySink: Regex<(Substring, Substring)> {
-        #/\.(title|label|paletteLabel|toolTip|placeholderString|messageText|informativeText|stringValue)\s*=/#
+    /// Display-text assignments and arrays: every literal after them on the line is display text.
+    private static var restOfLineSink: Regex<(Substring, Substring, Substring?)> {
+        #/(\.(title|label|paletteLabel|toolTip|placeholderString|messageText|informativeText|stringValue)\s*=|\blabels:\s*\[)/#
     }
 
     /// Calls that take display text as a literal argument.
     private static var argumentSink: Regex<(Substring, Substring, Substring?, Substring?, Substring?)> {
-        #/(\b(withTitle|title|checkboxWithTitle|labelWithString|wrappingLabelWithString|accessibilityDescription|labels):\s*\[?\s*|\b(Text|Label|Toggle|Button|Picker|Section|LabeledContent|Menu|Link)\(\s*|\.(help|accessibilityLabel|navigationTitle)\(\s*)"/#
+        #/(\b(withTitle|title|checkboxWithTitle|labelWithString|wrappingLabelWithString|accessibilityDescription):\s*|\b(Text|Label|Toggle|Button|Picker|Section|LabeledContent|Menu|Link)\(\s*|\.(help|accessibilityLabel|navigationTitle)\(\s*)"/#
     }
 
     static func check(source: String, file: String) -> [Finding] {
         let lines = source.components(separatedBy: "\n")
-        let propertySink = propertySink, argumentSink = argumentSink
+        let restOfLineSink = restOfLineSink, argumentSink = argumentSink
         var findings: [Finding] = []
 
         for (index, raw) in lines.enumerated() where raw.contains("\"") || raw.contains("(localized:") {
-            if raw.hasSuffix(optOut) || isComment(raw) { continue }
+            if isOptedOut(raw) || isComment(raw) { continue }
             let line = stripComment(raw)
             let calls = localizedCalls.filter { line.contains($0) }
 
@@ -61,15 +69,23 @@ enum LocalizationLint {
                 }
             }
 
-            // Rule 2: no prose literal handed straight to a UI text sink.
-            guard calls.isEmpty, line.contains("\"") else { continue }
+            // Rule 2: no prose literal handed straight to a UI text sink. Localized calls are blanked out
+            // first, so `[String(localized: "List", …), "Grid"]` still has "Grid" checked.
+            let open = calls.isEmpty ? line : blankingLocalizedCalls(in: line)
+            guard open.contains("\"") else { continue }
             var literals: [String] = []
-            if let sink = line.firstMatch(of: propertySink) {
-                literals = stringLiterals(in: String(line[sink.range.upperBound...]))
+            if let sink = open.firstMatch(of: restOfLineSink) {
+                let rest = String(open[sink.range.upperBound...])
+                literals = stringLiterals(in: rest)
+                if rest.contains("\"\"\"") { literals.append(multilineLiteral(lines, after: index)) }
             } else {
-                for sink in line.matches(of: argumentSink) {
-                    let quote = line.index(before: sink.range.upperBound)
-                    literals += stringLiterals(in: String(line[quote...])).prefix(1)
+                for sink in open.matches(of: argumentSink) {
+                    let rest = open[open.index(before: sink.range.upperBound)...]
+                    if rest.hasPrefix("\"\"\"") {
+                        literals.append(multilineLiteral(lines, after: index))
+                    } else {
+                        literals += stringLiterals(in: String(rest)).prefix(1)
+                    }
                 }
             }
             if literals.contains(where: isProse) {
@@ -87,10 +103,13 @@ enum LocalizationLint {
             let files = FileManager.default.enumerator(at: dir, includingPropertiesForKeys: nil)?
                 .compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" } ?? []
             #expect(!files.isEmpty, "no sources found in \(dir.path)")
+            // Relative to the module folder, with symlinks resolved on both sides: under xcodebuild,
+            // #filePath and the enumerator can disagree about /tmp vs /private/tmp.
+            let base = dir.resolvingSymlinksInPath().path
             for url in files {
-                let relative = String(url.path.dropFirst(repositoryRoot.path.count)).trimmingPrefix("/")
+                let relative = "Sources/\(module)" + url.resolvingSymlinksInPath().path.dropFirst(base.count)
                 if exemptPaths.contains(where: { relative.hasPrefix($0) }) { continue }
-                findings += check(source: try String(contentsOf: url, encoding: .utf8), file: String(relative))
+                findings += check(source: try String(contentsOf: url, encoding: .utf8), file: relative)
             }
         }
         return findings
@@ -133,6 +152,37 @@ enum LocalizationLint {
             out.append("\n")
         }
         return out
+    }
+
+    /// `line` with each localized call (from its name to the matching ")", or to the end of the line if
+    /// it continues) replaced by spaces.
+    static func blankingLocalizedCalls(in line: String) -> String {
+        var chars = Array(line)
+        let text = String(chars)
+        for call in localizedCalls {
+            var searchStart = text.startIndex
+            while let range = text.range(of: call, range: searchStart..<text.endIndex) {
+                searchStart = range.upperBound
+                let start = text.distance(from: text.startIndex, to: range.lowerBound)
+                var i = start + call.distance(from: call.startIndex, to: call.firstIndex(of: "(")!)
+                var depth = 0, inString = false
+                while i < chars.count {
+                    let c = chars[i]
+                    if c == "\"" && chars[i - 1] != "\\" { inString.toggle() }
+                    if !inString {
+                        if c == "(" { depth += 1 } else if c == ")" { depth -= 1; if depth == 0 { break } }
+                    }
+                    i += 1
+                }
+                for j in start...min(i, chars.count - 1) { chars[j] = " " }
+            }
+        }
+        return String(chars)
+    }
+
+    /// The contents of a `"""` literal that opens on line `index`, up to its closing `"""`.
+    static func multilineLiteral(_ lines: [String], after index: Int) -> String {
+        lines[(index + 1)...].prefix { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("\"\"\"") }.joined(separator: "\n")
     }
 
     /// Contents of the string literals in `text`, with interpolations removed.
@@ -193,6 +243,11 @@ struct LocalizationLintTests {
         #".help("Reload")"#,
         #"let s = String(localized: "Folder")"#,
         #"let r = LocalizedStringResource("Folder", comment: "Kind column")"#,
+        #"labels: [String(localized: "List", bundle: .module, comment: "Toolbar"), "Grid"], target: self"#,
+        #"alert.messageText = flag ? String(localized: "One", bundle: .module, comment: "Alert title") : "Several""#,
+        #"Text(String(localized: "A", bundle: .module, comment: "Title")); item.toolTip = "Raw tooltip""#,
+        "alert.informativeText = \"\"\"\n    Several lines of prose\n    \"\"\"",
+        "Text(\"\"\"\n    Several lines of prose\n    \"\"\")",
     ])
     func flags(_ source: String) {
         #expect(!LocalizationLint.check(source: source, file: "x.swift").isEmpty)
@@ -210,6 +265,10 @@ struct LocalizationLintTests {
         #"// alert.messageText = "Old text""#,
         #"item.label = "Raw"  // l10n-ignore"#,
         #"let s = String(localized: .kindFolder)"#,
+        "item.label = \"Raw\"  // l10n-ignore   ",
+        #"labels: [list, grid, columns], target: self"#,
+        "alert.informativeText = String(localized: \"\"\"\n    Several lines of prose\n    \"\"\", bundle: .module, comment: \"Alert\")",
+        "Text(verbatim: \"\"\"\n    Not translated\n    \"\"\")",
     ])
     func allows(_ source: String) {
         #expect(LocalizationLint.check(source: source, file: "x.swift").isEmpty)

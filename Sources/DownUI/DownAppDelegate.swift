@@ -96,25 +96,31 @@ public final class DownAppDelegate: NSObject, NSApplicationDelegate, AppCoordina
                 for (suffix, view) in controller.snapshotParts() {
                     guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }
                     view.cacheDisplay(in: view.bounds, to: rep)
-                    let partPath = path.replacingOccurrences(of: ".png", with: "-\(suffix).png")
+                    let partPath = Self.snapshotPath(path, part: suffix)
                     try? rep.representation(using: .png, properties: [:])?.write(to: URL(filePath: partPath))
                 }
             }
             // DOWN_SNAPSHOT_SETTINGS=1 also captures the Settings window (General pane), e.g. for pseudo-language review.
             if ProcessInfo.processInfo.environment["DOWN_SNAPSHOT_SETTINGS"] == "1" {
                 showSettings()
-                // The grouped Form has no intrinsic height; give it room so the whole pane renders.
-                settingsWindow?.window?.setContentSize(NSSize(width: 560, height: 420))
                 try? await Task.sleep(for: .seconds(1))
                 if let frameView = settingsWindow?.window?.contentView?.superview,
                    let rep = frameView.bitmapImageRepForCachingDisplay(in: frameView.bounds) {
                     frameView.cacheDisplay(in: frameView.bounds, to: rep)
-                    let settingsPath = path.replacingOccurrences(of: ".png", with: "-settings.png")
+                    let settingsPath = Self.snapshotPath(path, part: "settings")
                     try? rep.representation(using: .png, properties: [:])?.write(to: URL(filePath: settingsPath))
                 }
             }
             NSApp.terminate(nil)
         }
+    }
+
+    /// Where a snapshot part goes: `shot.png` → `shot-sidebar.png`, `shot` → `shot-sidebar`. Only the
+    /// file name's extension is touched, so a folder like `x.png.d/` is left alone.
+    static func snapshotPath(_ path: String, part: String) -> String {
+        let ns = path as NSString
+        let base = ns.deletingPathExtension + "-" + part
+        return ns.pathExtension.isEmpty ? base : base + "." + ns.pathExtension
     }
 
     public func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }

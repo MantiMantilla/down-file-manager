@@ -18,18 +18,32 @@ modules=(DownCore DownUI)
 
 swift build --build-system swiftbuild -q >/dev/null
 
-# The .stringsdata of one module's current source files. Searches the module's build directory rather
-# than one fixed path, and skips files whose source no longer exists, so a deleted file's leftover output
-# can't keep its keys alive.
+# The .stringsdata of one module's current source files.
+#
+# Each .stringsdata records the absolute path of the source file it came from ("source": "…"). A file is
+# used only if that source still exists under Sources/<Module>/, so output left behind by a deleted file
+# can't keep its keys alive. When several files record the same source (another architecture, an older
+# build folder), only the newest is used. Two processes in all: one `ls -t`, one `grep`.
 stringsdata_args() {
-    local module=$1 found=0 file base
-    while IFS= read -r file; do
-        base=$(basename "$file" .stringsdata)
-        if [ -n "$(find "Sources/$module" -name "$base.swift" -print -quit)" ]; then
+    local module=$1 found=0 files=() f line file source seen=$'\n'
+    local -a roots=("$PWD/Sources/$module/" "$(pwd -P)/Sources/$module/")
+    while IFS= read -r -d '' f; do files+=("$f"); done \
+        < <(find .build -type f -path "*/$module-t.build/*" -name '*.stringsdata' -print0)
+    if [ ${#files[@]} -gt 0 ]; then
+        while IFS= read -r line; do
+            file=${line%%:\"source\"*}
+            source=${line#*\"source\"}
+            source=${source#*\"}
+            source=${source%\"}
+            source=${source//\\\//\/}    # JSON may escape "/" as "\/"
+            case "$source" in "${roots[0]}"*|"${roots[1]}"*) ;; *) continue ;; esac
+            [ -f "$source" ] || continue
+            case "$seen" in *$'\n'"$source"$'\n'*) continue ;; esac
+            seen+="$source"$'\n'
             printf '%s\0' --stringsdata "$file"
             found=1
-        fi
-    done < <(find .build -type f -path "*/Debug/$module-t.build/*" -name '*.stringsdata' | sort)
+        done < <(ls -t "${files[@]}" | tr '\n' '\0' | xargs -0 grep -H -o '"source" *: *"[^"]*"')
+    fi
     if [ $found = 0 ]; then
         echo "error: no .stringsdata found for $module under .build (did the build layout change?)" >&2
         return 1

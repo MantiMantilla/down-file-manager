@@ -431,7 +431,7 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
         }
         if let days = cal.dateComponents([.day], from: date, to: Date()).day, days < 7, days >= 0 {
             let weekday = date.formatted(.dateTime.weekday(.wide))
-            return String(localized: "\(weekday) \(time)", bundle: .module,
+            return String(localized: "modified.weekdayTime", defaultValue: "\(weekday) \(time)", bundle: .module,
                           comment: "Modified column, this week: the weekday name, then the time")
         }
         return dateFormatter.string(from: date)

@@ -156,7 +156,8 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
                                   path: "/Applications"))
 
         let pins = vm.app.settings.pins.map { pin in
-            SidebarNode(kind: .pin(pin.id), title: pin.name, symbol: "folder", path: vm.app.resolvedPath(for: pin))
+            let path = vm.app.resolvedPath(for: pin)
+            return SidebarNode(kind: .pin(pin.id), title: Self.title(of: pin, resolvedPath: path), symbol: "folder", path: path)
         }
 
         var devices: [SidebarNode] = []
@@ -315,9 +316,22 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
 
     @objc private func menuPin(_ sender: NSMenuItem) {
         guard let node = sender.representedObject as? SidebarNode, let path = node.path else { return }
-        // No name: the pin takes the folder's own name. Persisting the sidebar's (localized) title would
-        // freeze it in the current language. Renaming a pin still stores the name the user typed.
-        vm.app.send(.addPin(path: path, name: nil, at: nil))
+        vm.app.send(.addPin(path: path, name: Self.pinName(forPlaceAt: path, home: vm.app.env.homePath), at: nil))
+    }
+
+    /// The name stored for a pin made from a Places row. Home is named "Home" (as before), not after the
+    /// account folder. Other places pass nil, so the pin takes the folder's own name, which `title(of:)`
+    /// then shows in the system's language.
+    static func pinName(forPlaceAt path: String, home: String) -> String? {
+        path == home ? UIStrings.home : nil
+    }
+
+    /// A pin's sidebar title. A pin still named after its folder (never renamed) shows the folder's
+    /// localized display name, like the Places rows ("Dokumente" for Documents in German). A name the
+    /// user gave it is shown as is. Nothing about the stored pin changes.
+    static func title(of pin: Pin, resolvedPath: String) -> String {
+        guard pin.name == (pin.path as NSString).lastPathComponent else { return pin.name }
+        return FileManager.default.displayName(atPath: resolvedPath)
     }
 
     @objc private func menuUnpin(_ sender: NSMenuItem) {

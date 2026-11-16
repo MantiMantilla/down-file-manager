@@ -1,17 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ (%@)" : {
-      "comment" : "Folder error message: the system's reason, then the full path in parentheses",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ (%2$@)"
-          }
-        }
-      }
-    },
     "%@ file" : {
       "comment" : "Kind column: a file of unknown type, named by its extension (e.g. “XYZ file”)"
     },
@@ -166,6 +155,18 @@
     },
     "as List" : {
       "comment" : "View menu: show the folder as a list (reads “View as List”)"
+    },
+    "folderError.reasonAndPath" : {
+      "comment" : "Folder error message: the system's reason, then the full path in parentheses",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ (%2$@)"
+          }
+        }
+      }
     },
     "“%@” doesn't exist." : {
       "comment" : "Folder error message: the folder name"

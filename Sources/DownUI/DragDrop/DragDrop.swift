@@ -141,7 +141,7 @@ enum DropPerformer {
                      comment: "Alert title: several dropped or pasted items failed")
         alert.informativeText = failures.prefix(5).map { failure in
             let name = DisplayName.sanitize((failure.path as NSString).lastPathComponent)
-            return String(localized: "\(name): \(failure.message)", bundle: .module,
+            return String(localized: "transferFailure.nameAndMessage", defaultValue: "\(name): \(failure.message)", bundle: .module,
                           comment: "Transfer failure alert, one line per item: the file name, then the error message")
         }.joined(separator: "\n")
         alert.runModal()

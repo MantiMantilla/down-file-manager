@@ -39,8 +39,8 @@ public enum FileSourceError: Error, Equatable, LocalizedError {
             case ENOENT:
                 return String(localized: "“\(name)” doesn't exist.", bundle: .module, comment: "Folder error message: the folder name")
             default:
-                return String(localized: "\(reason) (\(DisplayName.sanitize(path)))", bundle: .module,
-                              comment: "Folder error message: the system's reason, then the full path in parentheses")
+                return String(localized: "folderError.reasonAndPath", defaultValue: "\(reason) (\(DisplayName.sanitize(path)))",
+                              bundle: .module, comment: "Folder error message: the system's reason, then the full path in parentheses")
             }
         case .unsupportedScheme(let s):
             return String(localized: "Unsupported location type “\(DisplayName.sanitize(s))”.", bundle: .module,

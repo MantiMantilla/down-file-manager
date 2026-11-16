@@ -4,28 +4,6 @@
     "%@\n\nmacOS may need you to allow Down to access this location." : {
       "comment" : "Shown under Access Denied; the argument is the error message"
     },
-    "%@ %@" : {
-      "comment" : "Modified column, this week: the weekday name, then the time",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ %2$@"
-          }
-        }
-      }
-    },
-    "%@: %@" : {
-      "comment" : "Transfer failure alert, one line per item: the file name, then the error message",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@: %2$@"
-          }
-        }
-      }
-    },
     "%lld items" : {
       "comment" : "Size column for a folder: how many items it contains",
       "localizations" : {
@@ -361,6 +339,30 @@
     },
     "Zoom" : {
       "comment" : "Window menu: zoom the window (verb)"
+    },
+    "modified.weekdayTime" : {
+      "comment" : "Modified column, this week: the weekday name, then the time",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "transferFailure.nameAndMessage" : {
+      "comment" : "Transfer failure alert, one line per item: the file name, then the error message",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
     },
     "“%@” couldn't be ejected" : {
       "comment" : "Alert title: the volume name"

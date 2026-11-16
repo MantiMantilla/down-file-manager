@@ -45,7 +45,48 @@ struct LocalizedTextTests {
         #expect(FileListViewController.sizeText(folder(5)) == "5 items")
     }
 
+    /// Semantic keys ("modified.weekdayTime") resolve to their English default value, not the key.
+    @Test func semanticKeysShowTheirDefaultValue() throws {
+        let date = try #require(Calendar.current.date(byAdding: .day, value: -3, to: Date()))
+        let text = FileListViewController.dateText(date)
+        #expect(text.hasPrefix(date.formatted(.dateTime.weekday(.wide)) + " "))
+        #expect(!text.contains("modified."))
+        #expect(FileSourceError.posix(EIO, path: "/x/y").errorDescription?.hasSuffix(" (/x/y)") == true)
+    }
+
+    @Test func pinningHomeKeepsTheHomeName() {
+        #expect(SidebarViewController.pinName(forPlaceAt: "/Users/someone", home: "/Users/someone") == "Home")
+        #expect(SidebarViewController.pinName(forPlaceAt: "/Users/someone/Documents", home: "/Users/someone") == nil)
+    }
+
+    @Test func pinTitles() {
+        // Never renamed (still named after its folder): the resolved folder's display name.
+        let unrenamed = Pin(name: "proj", path: "/x/proj")
+        #expect(SidebarViewController.title(of: unrenamed, resolvedPath: "/Applications")
+                == FileManager.default.displayName(atPath: "/Applications"))
+        // Renamed by the user: kept as is.
+        let renamed = Pin(name: "Work", path: "/x/proj")
+        #expect(SidebarViewController.title(of: renamed, resolvedPath: "/Applications") == "Work")
+        let home = Pin(name: "Home", path: "/Users/someone")
+        #expect(SidebarViewController.title(of: home, resolvedPath: "/Users/someone") == "Home")
+    }
+
     @Test func sortFieldTitles() {
         #expect(SortField.allCases.map(UIStrings.title(of:)) == ["Name", "Size", "Modified", "Kind"])
+    }
+}
+
+@Suite("Snapshot part paths")
+@MainActor
+struct SnapshotPathTests {
+    @Test(arguments: [
+        ("/tmp/shot.png", "/tmp/shot-settings.png"),
+        ("/tmp/shot", "/tmp/shot-settings"),
+        ("/tmp/x.png.d/shot.png", "/tmp/x.png.d/shot-settings.png"),
+        ("/tmp/x.png.d/shot", "/tmp/x.png.d/shot-settings"),
+        ("shot.PNG", "shot-settings.PNG"),
+    ])
+    func partPath(path: String, expected: String) {
+        #expect(DownAppDelegate.snapshotPath(path, part: "settings") == expected)
     }
 }

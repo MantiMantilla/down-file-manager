@@ -61,6 +61,18 @@ struct LocalizationCatalogTests {
         }
     }
 
+    /// Keys made only of placeholders and punctuation ("%@ (%@)") collide easily and tell translators
+    /// nothing; such strings get a semantic key with `defaultValue:`.
+    @Test(arguments: codeCatalogs + ["App/InfoPlist.xcstrings"])
+    func keysHaveWordsOutsideFormatSpecifiers(path: String) throws {
+        let catalog = try StringCatalog(path)
+        let specifier = #/%(\d+\$)?(#@\w+@|[-+ #0']*\d*(\.\d+)?(hh|h|ll|l|q|L|z|t|j)?[@dDiuUxXoOfFeEgGcCsSpaA%])/#
+        for key in catalog.strings.keys {
+            let words = key.replacing(specifier, with: "")
+            #expect(words.contains { $0.isLetter }, "\(path): \"\(key)\" has no words; give it a semantic key with defaultValue:")
+        }
+    }
+
     @Test(arguments: codeCatalogs)
     func pluralsDefineOther(path: String) throws {
         let catalog = try StringCatalog(path)
