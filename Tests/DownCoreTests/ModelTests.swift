@@ -102,6 +102,12 @@ struct DisplayNameTests {
             #expect(DisplayName.sanitize(n) == n)
         }
     }
+
+    /// A bidi override in a name must not reorder the message around it.
+    @Test func errorMessagesSanitizeNames() {
+        #expect(FileSourceError.notADirectory("/x/\u{202E}gnp.exe").errorDescription == "“\\u{202E}gnp.exe” is not a folder.")
+        #expect(FileSourceError.posix(ENOENT, path: "/x/a\nb").errorDescription == "“a\\u{A}b” doesn't exist.")
+    }
 }
 
 @Suite("Keybindings")

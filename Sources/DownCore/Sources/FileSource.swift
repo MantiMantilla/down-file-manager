@@ -24,13 +24,14 @@ public enum FileSourceError: Error, Equatable, LocalizedError {
     case unsupportedScheme(String)
     case notADirectory(String)
 
+    /// Names in these messages go through `DisplayName.sanitize`, like everywhere else they are shown.
     public var errorDescription: String? {
         switch self {
         case .posix(let code, let path):
             // The system's localized reason ("Permission denied"); strerror(3) is English only.
             let error = NSError(domain: NSPOSIXErrorDomain, code: Int(code))
             let reason = error.localizedFailureReason ?? error.localizedDescription
-            let name = (path as NSString).lastPathComponent
+            let name = DisplayName.sanitize((path as NSString).lastPathComponent)
             switch code {
             case EACCES, EPERM:
                 return String(localized: "You don't have permission to open “\(name)”. (\(reason))", bundle: .module,
@@ -38,14 +39,15 @@ public enum FileSourceError: Error, Equatable, LocalizedError {
             case ENOENT:
                 return String(localized: "“\(name)” doesn't exist.", bundle: .module, comment: "Folder error message: the folder name")
             default:
-                return String(localized: "\(reason) (\(path))", bundle: .module,
+                return String(localized: "\(reason) (\(DisplayName.sanitize(path)))", bundle: .module,
                               comment: "Folder error message: the system's reason, then the full path in parentheses")
             }
         case .unsupportedScheme(let s):
-            return String(localized: "Unsupported location type “\(s)”.", bundle: .module,
+            return String(localized: "Unsupported location type “\(DisplayName.sanitize(s))”.", bundle: .module,
                           comment: "Folder error message: a location whose URL scheme Down can't open (e.g. “ftp”)")
         case .notADirectory(let p):
-            return String(localized: "“\((p as NSString).lastPathComponent)” is not a folder.", bundle: .module,
+            let name = DisplayName.sanitize((p as NSString).lastPathComponent)
+            return String(localized: "“\(name)” is not a folder.", bundle: .module,
                           comment: "Folder error message: the name of a file that was opened as a folder")
         }
     }

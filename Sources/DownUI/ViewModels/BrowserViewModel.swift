@@ -331,7 +331,7 @@ public final class BrowserViewModel {
 
         case .rootVanished(let gen, let fallback):
             guard gen == generation else { return }
-            notice = String(localized: "“\(location.name)” is no longer available.", bundle: .module,
+            notice = String(localized: "“\(DisplayName.sanitize(location.name))” is no longer available.", bundle: .module,
                             comment: "Notice when the open folder was deleted or unmounted: the folder name")
             env.logger(.watch).notice("folder vanished, moving to \(path: fallback.path)", actionID: id)
             navigate(to: fallback, id: id)

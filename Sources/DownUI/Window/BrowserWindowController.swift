@@ -76,7 +76,7 @@ public final class BrowserWindowController: NSWindowController, NSWindowDelegate
         tokens.append(track { [weak self] in
             guard let self, let window = self.window else { return }
             let loc = vm.location
-            window.title = loc.path == vm.app.env.homePath ? UIStrings.home : loc.name
+            window.title = loc.path == vm.app.env.homePath ? UIStrings.home : DisplayName.sanitize(loc.name)
             window.representedURL = loc.isLocal ? loc.url : nil
             window.tab.title = window.title
         })

@@ -297,7 +297,7 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
             add(String(localized: "Unpin", bundle: .module, comment: "Sidebar context menu: remove a pinned folder"), #selector(menuUnpin(_:)))
         case .volume(let ejectable) where ejectable:
             menu.addItem(.separator())
-            add(String(localized: "Eject “\(node.title)”", bundle: .module, comment: "Sidebar context menu: the volume name"),
+            add(String(localized: "Eject “\(DisplayName.sanitize(node.title))”", bundle: .module, comment: "Sidebar context menu: the volume name"),
                 #selector(menuEject(_:)))
         case .place:
             menu.addItem(.separator())
@@ -357,7 +357,7 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
         } catch {
             log.error("eject failed for \(path: path): \(error.localizedDescription)")
             let alert = NSAlert(error: error)
-            alert.messageText = String(localized: "“\(node.title)” couldn't be ejected", bundle: .module,
+            alert.messageText = String(localized: "“\(DisplayName.sanitize(node.title))” couldn't be ejected", bundle: .module,
                                        comment: "Alert title: the volume name")
             alert.informativeText = String(localized: "It may be in use by another app. \(error.localizedDescription)", bundle: .module,
                                            comment: "Eject failure alert; the system's error message follows")
