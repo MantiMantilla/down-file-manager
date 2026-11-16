@@ -1,13 +1,29 @@
-.PHONY: build app debug-app run test test-integration test-all bench coverage install clean
+.PHONY: build app debug-app run test test-integration test-all test-xcode test-tsan bench coverage install clean
+
+# Xcode is required (the Command Line Tools alone can't build the app target). Override to use another Xcode.
+DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
+export DEVELOPER_DIR
+
+DERIVED_DATA := build/xcode
+XCODEBUILD := xcodebuild -project Down.xcodeproj -scheme Down -derivedDataPath $(DERIVED_DATA) \
+	-destination 'platform=macOS,arch=$(shell uname -m)'
+
+# Builds Down.app with Xcode and copies it to build/Down.app (used by run, install and scripts/down).
+define build_app
+	$(XCODEBUILD) -configuration $(1) build
+	rm -rf build/Down.app
+	ditto "$(DERIVED_DATA)/Build/Products/$(1)/Down.app" build/Down.app
+	@echo "Built build/Down.app ($(1))"
+endef
 
 build:
-	swift build
+	$(XCODEBUILD) -configuration Debug build
 
 app:
-	scripts/bundle.sh release
+	$(call build_app,Release)
 
 debug-app:
-	scripts/bundle.sh debug
+	$(call build_app,Debug)
 
 # Runs in the foreground so stderr logs show up in this terminal.
 run: debug-app
@@ -25,13 +41,25 @@ test-integration:
 test-all:
 	DOWN_TEST_INTEGRATION=1 DOWN_TEST_VOLUMES=1 DOWN_TEST_SNAPSHOTS=1 swift test
 
+# The same tests through the Xcode scheme. xcodebuild only forwards environment variables to the
+# test runner with a TEST_RUNNER_ prefix, e.g. TEST_RUNNER_DOWN_TEST_INTEGRATION=1 make test-xcode.
+test-xcode:
+	$(XCODEBUILD) test
+
+# Thread Sanitizer over the unit and integration tests.
+test-tsan:
+	DOWN_TEST_INTEGRATION=1 swift test --sanitize=thread
+
 bench:
 	DOWN_TEST_PERFORMANCE=1 swift test -c release --filter Performance
 
+# With Xcode's toolchain SwiftPM builds one test bundle per test target (no DownPackageTests.xctest).
 coverage:
 	swift test --enable-code-coverage
-	xcrun llvm-cov report "$$(swift build --show-bin-path)/DownPackageTests.xctest/Contents/MacOS/DownPackageTests" \
-	  -instr-profile "$$(swift build --show-bin-path)/codecov/default.profdata" \
+	bin="$$(swift build --show-bin-path)"; \
+	xcrun llvm-cov report "$$bin/DownCoreTests.xctest/Contents/MacOS/DownCoreTests" \
+	  -object "$$bin/DownUITests.xctest/Contents/MacOS/DownUITests" \
+	  -instr-profile "$$bin/codecov/default.profdata" \
 	  -ignore-filename-regex '(\.build|Tests|DownTestSupport)/'
 
 install: app
@@ -43,4 +71,4 @@ install: app
 	@echo "Installed ~/Applications/Down.app and ~/.local/bin/down"
 
 clean:
-	rm -rf .build build
+	rm -rf .build build $(DERIVED_DATA)

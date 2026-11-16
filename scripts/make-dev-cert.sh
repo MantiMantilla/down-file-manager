@@ -6,7 +6,8 @@
 # identity keeps the app's designated requirement constant across builds.
 #
 # This modifies your keychain and asks for your password to trust the certificate
-# for code signing. Run it yourself; bundle.sh picks the identity up automatically.
+# for code signing. Run it yourself, then select it in Config/Local.xcconfig (option B in
+# Config/Local.xcconfig.example).
 set -euo pipefail
 
 NAME="Down Local Signing"
