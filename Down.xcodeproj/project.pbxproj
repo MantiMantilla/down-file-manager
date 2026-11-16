@@ -1,0 +1,253 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		89AA905BF8C1273BBDD15FD4 /* DownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 62EE759F7C8BE2525E2C8E2A /* DownUI */; };
+		40CF58FB862461753C4DC1DC /* DownCore in Frameworks */ = {isa = PBXBuildFile; productRef = F549750020A29724ED36595D /* DownCore */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B74E1A450534EEB2A1B77D91 /* Down */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Down; path = .; sourceTree = "<group>"; };
+		EFF6029C1FBC56B3623D6811 /* Down.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Down.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		4059E5539D2FF7907E890851 /* App */ = {isa = PBXFileSystemSynchronizedRootGroup; path = App; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		923546451762B860E527821A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				89AA905BF8C1273BBDD15FD4 /* DownUI in Frameworks */,
+				40CF58FB862461753C4DC1DC /* DownCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		252075A95B8737F812A5D9EB = {
+			isa = PBXGroup;
+			children = (
+				B74E1A450534EEB2A1B77D91 /* Down */,
+				4059E5539D2FF7907E890851 /* App */,
+				5CBEEDA69E5428808D0835CA /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		5CBEEDA69E5428808D0835CA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EFF6029C1FBC56B3623D6811 /* Down.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		42C1DE1E5DB240D4D24E0B0D /* Down */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FBCB3172BA7A0B258EE43E91 /* Build configuration list for PBXNativeTarget "Down" */;
+			buildPhases = (
+				51EE8A68708BB4D775BAB339 /* Sources */,
+				923546451762B860E527821A /* Frameworks */,
+				44E984709DAD677F8441F3D6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4059E5539D2FF7907E890851 /* App */,
+			);
+			name = Down;
+			packageProductDependencies = (
+				62EE759F7C8BE2525E2C8E2A /* DownUI */,
+				F549750020A29724ED36595D /* DownCore */,
+			);
+			productName = Down;
+			productReference = EFF6029C1FBC56B3623D6811 /* Down.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		759857A38A0460236F42B999 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2720;
+				LastUpgradeCheck = 2720;
+			};
+			buildConfigurationList = CD6E14A1B365554E23488DBF /* Build configuration list for PBXProject "Down" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 252075A95B8737F812A5D9EB;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				87F2877B0B8020F17D1B8490 /* XCLocalSwiftPackageReference "." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 5CBEEDA69E5428808D0835CA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				42C1DE1E5DB240D4D24E0B0D /* Down */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		44E984709DAD677F8441F3D6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		51EE8A68708BB4D775BAB339 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F20C9B1A15C88357B1054289 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		16D3948A79820D407811CC33 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		938328B25F675F746C87AEBF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Resources/Down.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.down.Down;
+				PRODUCT_NAME = Down;
+			};
+			name = Debug;
+		};
+		1789AA70E1EDA2B6E05643EF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Resources/Down.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.down.Down;
+				PRODUCT_NAME = Down;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CD6E14A1B365554E23488DBF /* Build configuration list for PBXProject "Down" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F20C9B1A15C88357B1054289 /* Debug */,
+				16D3948A79820D407811CC33 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FBCB3172BA7A0B258EE43E91 /* Build configuration list for PBXNativeTarget "Down" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				938328B25F675F746C87AEBF /* Debug */,
+				1789AA70E1EDA2B6E05643EF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		87F2877B0B8020F17D1B8490 /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		62EE759F7C8BE2525E2C8E2A /* DownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DownUI;
+		};
+		F549750020A29724ED36595D /* DownCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DownCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 759857A38A0460236F42B999 /* Project object */;
+}
