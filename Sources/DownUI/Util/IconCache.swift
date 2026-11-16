@@ -24,7 +24,11 @@ final class IconCache {
         let key: String
         let type: UTType
         switch item.kind {
-        case .directory, .symlink where item.symlinkTargetIsDirectory:
+        // Packages returned above, so every directory here is a plain folder.
+        case .directory:
+            key = "public.folder"
+            type = .folder
+        case .symlink where item.symlinkTargetIsDirectory:
             key = "public.folder"
             type = .folder
         case .symlink:
