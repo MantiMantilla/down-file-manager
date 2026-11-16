@@ -1,8 +1,8 @@
 .build/
 build/
 .swiftpm/
-*.xcodeproj
 xcuserdata/
 .DS_Store
 /Packages
 default.profraw
+Config/Local.xcconfig
