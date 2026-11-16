@@ -167,9 +167,13 @@ public final class DownAppDelegate: NSObject, NSApplicationDelegate, AppCoordina
     }
 
     public func showSettings() {
-        if settingsWindow == nil { settingsWindow = SettingsWindowController(app: app) }
+        if settingsWindow == nil {
+            settingsWindow = SettingsWindowController(app: app)
+            // Center once; afterwards the window stays where the user moved it (also when ⌘, is
+            // pressed while it's open).
+            settingsWindow?.window?.center()
+        }
         settingsWindow?.showWindow(nil)
-        settingsWindow?.window?.center()
     }
 
     public func showDebugConsole() {
