@@ -85,8 +85,11 @@ public enum TypeCache {
         let key = ext.lowercased()
         if let hit = fileCache.withLock({ $0[key] }) { return hit }
         let type = UTType(filenameExtension: key)
-        let entry = Entry(isPackage: false,
-                          description: type?.localizedDescription ?? (key.isEmpty ? "Document" : "\(key.uppercased()) file"))
+        let fallback = key.isEmpty
+            ? String(localized: "Document", bundle: .module, comment: "Kind column: a file with no extension and no known type")
+            : String(localized: "\(key.uppercased()) file", bundle: .module,
+                     comment: "Kind column: a file of unknown type, named by its extension (e.g. “XYZ file”)")
+        let entry = Entry(isPackage: false, description: type?.localizedDescription ?? fallback)
         fileCache.withLock { $0[key] = entry }
         return entry
     }
@@ -102,15 +105,21 @@ public enum TypeCache {
     }
 
     private static func packageDescription(for ext: String) -> String {
-        UTType(filenameExtension: ext.lowercased(), conformingTo: .directory)?.localizedDescription ?? "Package"
+        UTType(filenameExtension: ext.lowercased(), conformingTo: .directory)?.localizedDescription
+            ?? String(localized: "Package", bundle: .module, comment: "Kind column: a bundle folder shown as one file, of unknown type")
     }
 
     public static func kindDescription(for item: FileItem) -> String {
         switch item.kind {
-        case .directory where !item.isPackage: return "Folder"
+        case .directory where !item.isPackage:
+            return String(localized: "Folder", bundle: .module, comment: "Kind column: a folder")
         case .directory: return packageDescription(for: item.fileExtension)
-        case .symlink: return item.symlinkTargetIsDirectory ? "Alias (folder)" : "Alias"
-        case .other: return "Special file"
+        case .symlink:
+            return item.symlinkTargetIsDirectory
+                ? String(localized: "Alias (folder)", bundle: .module, comment: "Kind column: a symbolic link to a folder")
+                : String(localized: "Alias", bundle: .module, comment: "Kind column: a symbolic link to a file")
+        case .other:
+            return String(localized: "Special file", bundle: .module, comment: "Kind column: a device, socket or pipe")
         default: return entry(for: item.fileExtension).description
         }
     }

@@ -1,7 +1,178 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-
+    "%@ (%@)" : {
+      "comment" : "Folder error message: the system's reason, then the full path in parentheses",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "%@ file" : {
+      "comment" : "Kind column: a file of unknown type, named by its extension (e.g. “XYZ file”)"
+    },
+    "Actual Size" : {
+      "comment" : "View menu: reset the file list zoom"
+    },
+    "Alias" : {
+      "comment" : "Kind column: a symbolic link to a file"
+    },
+    "Alias (folder)" : {
+      "comment" : "Kind column: a symbolic link to a folder"
+    },
+    "Back" : {
+      "comment" : "Go menu: go to the previous folder"
+    },
+    "Close Tab" : {
+      "comment" : "File menu: close the current tab"
+    },
+    "Copy" : {
+      "comment" : "Edit menu and context menu: copy the selection (verb)"
+    },
+    "Cut" : {
+      "comment" : "Edit menu and context menu: cut the selection (verb)"
+    },
+    "Debug Console" : {
+      "comment" : "View menu: open the Debug Console developer tool"
+    },
+    "Delete Permanently…" : {
+      "comment" : "File menu: delete the selection without using the Trash"
+    },
+    "Document" : {
+      "comment" : "Kind column: a file with no extension and no known type"
+    },
+    "Enclosing Folder" : {
+      "comment" : "Go menu: go to the parent folder"
+    },
+    "Enter Location…" : {
+      "comment" : "Go menu: type a path into the path bar"
+    },
+    "Folder" : {
+      "comment" : "Kind column: a folder"
+    },
+    "Forward" : {
+      "comment" : "Go menu: go to the next folder in history"
+    },
+    "Go to Tab %lld" : {
+      "comment" : "Window menu (hidden item): switch to tab number N"
+    },
+    "Home" : {
+      "comment" : "Go menu: go to the home folder"
+    },
+    "Invert Selection" : {
+      "comment" : "Edit menu: select the unselected items and deselect the rest"
+    },
+    "Move to Trash" : {
+      "comment" : "File menu and context menu: move the selection to the Trash"
+    },
+    "New Folder" : {
+      "comment" : "File menu and context menu: create a folder"
+    },
+    "New Tab" : {
+      "comment" : "File menu: open a new tab"
+    },
+    "New Window" : {
+      "comment" : "File menu: open a new window"
+    },
+    "Open" : {
+      "comment" : "File menu and context menu: open the selected items"
+    },
+    "Open in Terminal" : {
+      "comment" : "File menu and context menu: open the folder in a terminal app"
+    },
+    "Package" : {
+      "comment" : "Kind column: a bundle folder shown as one file, of unknown type"
+    },
+    "Paste" : {
+      "comment" : "Edit menu and context menu: paste (verb)"
+    },
+    "Pin to Sidebar" : {
+      "comment" : "File menu and context menus: add the folder to the sidebar’s Pinned section"
+    },
+    "Properties" : {
+      "comment" : "File menu and context menu: show information about the selection"
+    },
+    "Quick Look" : {
+      "comment" : "View menu: preview the selection with Quick Look (Apple feature name)"
+    },
+    "Redo" : {
+      "comment" : "Edit menu: redo the last undone action"
+    },
+    "Reload" : {
+      "comment" : "View menu: reload the folder"
+    },
+    "Rename…" : {
+      "comment" : "File menu and context menu: rename the selected item"
+    },
+    "Search" : {
+      "comment" : "Edit menu and toolbar: search for files (verb)"
+    },
+    "Select All" : {
+      "comment" : "Edit menu: select every item"
+    },
+    "Settings…" : {
+      "comment" : "App menu: open the Settings window"
+    },
+    "Show Hidden Files" : {
+      "comment" : "View menu: toggle showing hidden files"
+    },
+    "Show Next Tab" : {
+      "comment" : "Window menu: switch to the next tab"
+    },
+    "Show Previous Tab" : {
+      "comment" : "Window menu: switch to the previous tab"
+    },
+    "Space" : {
+      "comment" : "Shortcut list in Settings: the space bar key"
+    },
+    "Special file" : {
+      "comment" : "Kind column: a device, socket or pipe"
+    },
+    "Toggle Sidebar" : {
+      "comment" : "View menu: show or hide the sidebar"
+    },
+    "Undo" : {
+      "comment" : "Edit menu: undo the last action"
+    },
+    "Unsupported location type “%@”." : {
+      "comment" : "Folder error message: a location whose URL scheme Down can't open (e.g. “ftp”)"
+    },
+    "You don't have permission to open “%@”. (%@)" : {
+      "comment" : "Folder error message. First: the folder name; second: the system's reason",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You don't have permission to open “%1$@”. (%2$@)"
+          }
+        }
+      }
+    },
+    "Zoom In" : {
+      "comment" : "View menu: make the file list larger"
+    },
+    "Zoom Out" : {
+      "comment" : "View menu: make the file list smaller"
+    },
+    "as Columns" : {
+      "comment" : "View menu: show the folder in columns (reads “View as Columns”)"
+    },
+    "as Grid" : {
+      "comment" : "View menu: show the folder as a grid of icons (reads “View as Grid”)"
+    },
+    "as List" : {
+      "comment" : "View menu: show the folder as a list (reads “View as List”)"
+    },
+    "“%@” doesn't exist." : {
+      "comment" : "Folder error message: the folder name"
+    },
+    "“%@” is not a folder." : {
+      "comment" : "Folder error message: the name of a file that was opened as a folder"
+    }
   },
   "version" : "1.1"
 }

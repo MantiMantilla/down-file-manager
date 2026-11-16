@@ -147,6 +147,13 @@ struct KeybindingTests {
         #expect(KeyCombo("left", .option).description == "⌥←")
         #expect(KeyCombo("n", [.command, .shift]).description == "⇧⌘N")
     }
+
+    /// Named keys are localized for display only; `description` (used in logs) stays fixed.
+    @Test func displayStringLocalizesNamedKeysOnly() {
+        #expect(KeyCombo("space").description == "Space")
+        #expect(KeyCombo("space", .shift).displayDescription == "⇧Space")
+        #expect(KeyCombo("left", .option).displayDescription == "⌥←")
+    }
 }
 
 @Suite("Settings")
