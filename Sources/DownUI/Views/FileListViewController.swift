@@ -273,17 +273,24 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
     /// While the user is mid-press, model-driven updates wait (see `FileTableView.isTrackingMouse`).
     private func deferWhileTrackingMouse(_ what: String) -> Bool {
         guard tableView.isTrackingMouse else { return false }
-        if !syncDeferred { log.trace("\(what) deferred until mouse-up") }
+        log.trace("\(what) deferred until mouse-up")
         syncDeferred = true
         return true
     }
 
+    /// True while the user is mid-press in the list; views that mirror the list (overlays) wait too.
+    var isTrackingMouse: Bool { tableView.isTrackingMouse }
+    /// Called after each press, once any deferred reload and selection sync have been applied.
+    var onMouseTrackingEnded: (() -> Void)?
+
     private func mouseTrackingEnded() {
-        guard syncDeferred else { return }
-        syncDeferred = false
-        log.trace("mouse-up: applying deferred reload/selection sync")
-        reloadIfNeeded()
-        applySelection(vm.selection)
+        if syncDeferred {
+            syncDeferred = false
+            log.trace("mouse-up: applying deferred reload/selection sync")
+            reloadIfNeeded()
+            applySelection(vm.selection)
+        }
+        onMouseTrackingEnded?()
     }
 
     private func reloadIfNeeded() {

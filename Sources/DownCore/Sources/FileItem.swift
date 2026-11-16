@@ -64,6 +64,14 @@ public struct FileItem: Sendable, Hashable, Identifiable {
     }
 
     public func hash(into h: inout Hasher) { h.combine(path) }
+
+    /// Every stored field matches. Unlike `==`, this also covers fields that change how the item is
+    /// shown or opened without touching its own metadata (a symlink's target kind, the package flag).
+    /// `sortKey` is derived from `name`, so it's covered too.
+    public func isIdentical(to other: FileItem) -> Bool {
+        self == other && name == other.name && created == other.created && isPackage == other.isPackage
+            && fileID == other.fileID && symlinkTargetIsDirectory == other.symlinkTargetIsDirectory
+    }
 }
 
 /// Cached UTType lookups keyed by extension (UTType creation is relatively expensive).

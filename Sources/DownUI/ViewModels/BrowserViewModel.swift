@@ -233,7 +233,9 @@ public final class BrowserViewModel {
             open(items.filter { set.contains($0.path) }, id: id)
 
         case .select(let paths):
-            selection = paths
+            // Keep only paths that still exist. The file list holds its rows while the mouse is down
+            // (reloads wait for mouse-up), so it can report a row whose file was deleted mid-press.
+            selection = paths.filter { all[$0] != nil }
 
         case .setSort(let order):
             guard order != sort else { return }
@@ -522,8 +524,9 @@ public final class BrowserViewModel {
     private func setItems(_ new: [FileItem]) {
         // Only a real change bumps the revision: every bump makes the list reload, which drops the
         // selection AppKit is tracking. Changes to hidden items (e.g. ~/Library, which changes several
-        // times a second) re-sort to the same visible rows and must not reload the list.
-        if new != items {
+        // times a second) re-sort to the same visible rows and must not reload the list. `==` alone
+        // isn't enough: it ignores e.g. a symlink's target kind, which changes the row's icon and Open.
+        if new.count != items.count || !zip(new, items).allSatisfy({ $0.isIdentical(to: $1) }) {
             items = new
             itemsRevision &+= 1
         }
