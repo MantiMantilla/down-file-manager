@@ -64,7 +64,6 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
     private let springLoader: SpringLoader
     private var suppressSelection = false
     private var workspaceObservers: [NSObjectProtocol] = []
-    private static let pinDragType = NSPasteboard.PasteboardType("app.down.pin")
     private let log: Logger
 
     init(vm: BrowserViewModel) {
@@ -87,9 +86,11 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
         outline.indentationPerLevel = 0
         outline.dataSource = self
         outline.delegate = self
-        outline.registerForDraggedTypes(DragSupport.acceptedTypes + [Self.pinDragType])
+        outline.registerForDraggedTypes(DragSupport.acceptedTypes + [DragSupport.pinType])
         outline.setDraggingSourceOperationMask(.move, forLocal: true)
-        outline.setDraggingSourceOperationMask([.copy, .link, .generic], forLocal: false)
+        // Pins are shortcuts, not files: dropping one on Finder or another app must not copy or move
+        // the real folder, so pin drags can't leave Down.
+        outline.setDraggingSourceOperationMask([], forLocal: false)
         outline.draggingDestinationFeedbackStyle = .sourceList
         outline.onDragExited = { [weak self] in self?.springLoader.cancel() }
         outline.target = self
@@ -345,9 +346,24 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
     func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> (any NSPasteboardWriting)? {
         guard let node = item as? SidebarNode, case .pin(let id) = node.kind else { return nil }
         let pb = NSPasteboardItem()
-        pb.setString(id.uuidString, forType: Self.pinDragType)
+        pb.setString(id.uuidString, forType: DragSupport.pinType)
         if let path = node.path { pb.setString(URL(filePath: path).absoluteString, forType: .fileURL) }
         return pb
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, draggingSession session: NSDraggingSession,
+                     willBeginAt screenPoint: NSPoint, forItems draggedItems: [Any]) {
+        vm.send(.dragBegan)
+        log.debug("pin drag started (session \(session.draggingSequenceNumber))")
+    }
+
+    /// The end of drags that start in the sidebar (reordering pins). This data-source callback is the
+    /// supported way to learn it; never override `draggingEnded(_:)` on the outline view.
+    func outlineView(_ outlineView: NSOutlineView, draggingSession session: NSDraggingSession,
+                     endedAt screenPoint: NSPoint, operation: NSDragOperation) {
+        springLoader.cancel()
+        vm.send(operation.isEmpty ? .springLoadCancelled : .dragEnded)
+        log.debug("pin drag ended (session \(session.draggingSequenceNumber), \(operation.isEmpty ? "cancelled" : "dropped"))")
     }
 
     // MARK: - Drop destination
@@ -358,7 +374,7 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
         let pb = info.draggingPasteboard
 
         // Reordering a pin: only between rows of the Pinned section.
-        if pb.types?.contains(Self.pinDragType) == true {
+        if pb.types?.contains(DragSupport.pinType) == true {
             springLoader.cancel()
             guard let section = pinnedSection else { return [] }
             if node === section, index != NSOutlineViewDropOnItemIndex { return .move }
@@ -399,7 +415,7 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
         let pb = info.draggingPasteboard
         let id = ActionID.next()
 
-        if let raw = pb.string(forType: Self.pinDragType), let pinID = UUID(uuidString: raw),
+        if let raw = pb.string(forType: DragSupport.pinType), let pinID = UUID(uuidString: raw),
            let from = vm.app.settings.pins.firstIndex(where: { $0.id == pinID }) {
             vm.app.send(.movePin(from: from, to: index), id: id)
             return true

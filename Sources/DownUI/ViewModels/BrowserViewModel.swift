@@ -56,6 +56,9 @@ public final class BrowserViewModel {
         case springLoad(Location)
         case springLoadCancelled
         case dragEnded
+        /// A drag started in this tab (list or sidebar): drop any spring-load origin left over from an
+        /// earlier drag whose end was never observed (e.g. a cancelled drag from another app).
+        case dragBegan
         case settingsChanged
         case dismissError
         // Internal results
@@ -85,6 +88,7 @@ public final class BrowserViewModel {
             case .springLoad(let l): "springLoad(\(l.path))"
             case .springLoadCancelled: "springLoadCancelled"
             case .dragEnded: "dragEnded"
+            case .dragBegan: "dragBegan"
             case .settingsChanged: "settingsChanged"
             case .dismissError: "dismissError"
             case .listingBatch(let g, let items): "listingBatch(gen \(g), \(items.count))"
@@ -186,10 +190,11 @@ public final class BrowserViewModel {
             log.debug("action \(action)", actionID: id)
         }
 
-        // A deliberate navigation ends any spring-loaded detour (e.g. one left behind by a drag from
-        // another app that was cancelled; only drags this list starts report their end).
+        // A deliberate navigation (including opening a folder) ends any spring-loaded detour. Drags that
+        // start in Down's list or sidebar report their end; a cancelled drag from another app doesn't,
+        // so its detour would otherwise linger and a later cancelled drag would jump back to it.
         switch action {
-        case .navigate, .goBack, .goForward, .goUp, .goHome: springOrigin = nil
+        case .navigate, .goBack, .goForward, .goUp, .goHome, .open, .openSelection: springOrigin = nil
         default: break
         }
 
@@ -270,7 +275,7 @@ public final class BrowserViewModel {
             env.logger(.dnd).debug("drag cancelled, returning to \(path: origin.path)", actionID: id)
             navigate(to: origin, id: id)
 
-        case .dragEnded:
+        case .dragEnded, .dragBegan:
             springOrigin = nil
 
         case .dismissError:

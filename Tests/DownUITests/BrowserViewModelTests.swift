@@ -183,6 +183,41 @@ struct BrowserViewModelTests {
         #expect(vm.location.path == "/tmp")
     }
 
+    @Test func openingAFolderClearsALeftoverSpringLoadDetour() async {
+        let h = Harness()
+        let vm = await h.browser()
+        vm.send(.springLoad(.file("/home/Documents")))  // e.g. a cancelled drag from another app
+        await vm.settle()
+        vm.send(.select(["/home/Documents/Taxes"]))
+        vm.send(.openSelection)  // double-click / Return into a subfolder
+        await vm.settle()
+        #expect(vm.location.path == "/home/Documents/Taxes")
+        #expect(vm.springOrigin == nil)
+    }
+
+    @Test func aNewDragStartsWithoutAStaleOrigin() async {
+        let h = Harness()
+        let vm = await h.browser()
+        vm.send(.springLoad(.file("/home/Documents")))  // leftover from an unobserved drag
+        await vm.settle()
+        vm.send(.dragBegan)  // the user starts a new drag in Down
+        #expect(vm.springOrigin == nil)
+        vm.send(.springLoadCancelled)  // and cancels it without spring-loading anywhere
+        await vm.settle()
+        #expect(vm.location.path == "/home/Documents")  // stays put; no jump to the stale origin
+    }
+
+    @Test func aNewDragRecordsItsOwnOriginForCancel() async {
+        let h = Harness()
+        let vm = await h.browser()
+        vm.send(.dragBegan)
+        vm.send(.springLoad(.file("/home/Documents")))
+        await vm.settle()
+        vm.send(.springLoadCancelled)
+        await vm.settle()
+        #expect(vm.location.path == "/home")
+    }
+
     @Test func completedDragKeepsSpringLoadedLocation() async {
         let h = Harness()
         let vm = await h.browser()

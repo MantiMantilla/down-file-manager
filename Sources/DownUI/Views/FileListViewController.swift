@@ -484,6 +484,7 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
 
     func tableView(_ tableView: NSTableView, draggingSession session: NSDraggingSession,
                    willBeginAt screenPoint: NSPoint, forRowIndexes rowIndexes: IndexSet) {
+        vm.send(.dragBegan)
         log.debug("drag started with \(rowIndexes.count) item(s) (session \(session.draggingSequenceNumber))")
     }
 
@@ -506,6 +507,11 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
 
     func tableView(_ tableView: NSTableView, validateDrop info: any NSDraggingInfo, proposedRow row: Int,
                    proposedDropOperation dropOperation: NSTableView.DropOperation) -> NSDragOperation {
+        // A sidebar pin carries its folder's URL, but dropping it here must never move that folder.
+        if DragSupport.isPinDrag(info.draggingPasteboard.types) {
+            springLoader.cancel()
+            return []
+        }
         let urls = DragSupport.fileURLs(from: info.draggingPasteboard)
         var destination = vm.location
 
@@ -530,6 +536,7 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
     func tableView(_ tableView: NSTableView, acceptDrop info: any NSDraggingInfo, row: Int,
                    dropOperation: NSTableView.DropOperation) -> Bool {
         springLoader.cancel()
+        guard !DragSupport.isPinDrag(info.draggingPasteboard.types) else { return false }
         let destination = (row >= 0 && row < shownItems.count && shownItems[row].isFolderLike) ? shownItems[row].path : vm.location.path
         let id = ActionID.next()
         let urls = DragSupport.fileURLs(from: info.draggingPasteboard)
