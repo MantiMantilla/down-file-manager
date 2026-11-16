@@ -143,13 +143,17 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
     private func rebuild() {
         let home = vm.app.env.homePath
         let fm = FileManager.default
-        var places = [SidebarNode(kind: .place, title: "Home", symbol: "house", path: home)]
+        var places = [SidebarNode(kind: .place, title: UIStrings.home, symbol: "house", path: home)]
+        // Standard folders take the system's localized names, as in Finder.
         for (name, symbol) in [("Desktop", "menubar.dock.rectangle"), ("Documents", "doc"), ("Downloads", "arrow.down.circle"),
                                ("Pictures", "photo"), ("Music", "music.note"), ("Movies", "film")] {
             let p = home + "/" + name
-            if fm.fileExists(atPath: p) { places.append(SidebarNode(kind: .place, title: name, symbol: symbol, path: p)) }
+            if fm.fileExists(atPath: p) {
+                places.append(SidebarNode(kind: .place, title: fm.displayName(atPath: p), symbol: symbol, path: p))
+            }
         }
-        places.append(SidebarNode(kind: .place, title: "Applications", symbol: "square.grid.3x3", path: "/Applications"))
+        places.append(SidebarNode(kind: .place, title: fm.displayName(atPath: "/Applications"), symbol: "square.grid.3x3",
+                                  path: "/Applications"))
 
         let pins = vm.app.settings.pins.map { pin in
             SidebarNode(kind: .pin(pin.id), title: pin.name, symbol: "folder", path: vm.app.resolvedPath(for: pin))
@@ -168,13 +172,25 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
                                        symbol: symbol, path: url.path(percentEncoded: false)))
         }
 
-        let trash = SidebarNode(kind: .trash, title: "Trash", symbol: "trash", path: home + "/.Trash")
+        let trash = SidebarNode(kind: .trash, title: String(localized: "Trash", bundle: .module, comment: "Sidebar row: the Trash"),
+                                symbol: "trash", path: home + "/.Trash")
 
-        roots = [SidebarNode(kind: .section("Places"), title: "Places", children: places)]
+        // Section kinds are identifiers; only the titles are localized.
+        roots = [SidebarNode(kind: .section("Places"),
+                             title: String(localized: "Places", bundle: .module, comment: "Sidebar section header: standard folders"),
+                             children: places)]
         // Always show the Pinned section so there's somewhere to drop folders.
-        roots.append(SidebarNode(kind: .section("Pinned"), title: "Pinned", children: pins))
-        roots.append(SidebarNode(kind: .section("Devices"), title: "Devices", children: devices))
-        roots.append(SidebarNode(kind: .section("Other"), title: "Other", children: [trash]))
+        roots.append(SidebarNode(kind: .section("Pinned"),
+                                 title: String(localized: "Pinned", bundle: .module,
+                                               comment: "Sidebar section header: folders the user pinned"),
+                                 children: pins))
+        roots.append(SidebarNode(kind: .section("Devices"),
+                                 title: String(localized: "Devices", bundle: .module, comment: "Sidebar section header: disks and volumes"),
+                                 children: devices))
+        roots.append(SidebarNode(kind: .section("Other"),
+                                 title: String(localized: "Other", bundle: .module,
+                                               comment: "Sidebar section header: everything else (holds the Trash)"),
+                                 children: [trash]))
 
         suppressSelection = true
         outline.reloadData()
@@ -270,18 +286,22 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         guard let node = outline.item(atRow: outline.menuRow) as? SidebarNode, !node.isSection else { return }
-        menu.addItem(withTitle: "Open in New Tab", action: #selector(menuOpenInNewTab(_:)), keyEquivalent: "").representedObject = node
+        func add(_ title: String, _ action: Selector) {
+            menu.addItem(withTitle: title, action: action, keyEquivalent: "").representedObject = node
+        }
+        add(String(localized: "Open in New Tab", bundle: .module, comment: "Sidebar context menu"), #selector(menuOpenInNewTab(_:)))
         switch node.kind {
         case .pin:
             menu.addItem(.separator())
-            menu.addItem(withTitle: "Rename…", action: #selector(menuRenamePin(_:)), keyEquivalent: "").representedObject = node
-            menu.addItem(withTitle: "Unpin", action: #selector(menuUnpin(_:)), keyEquivalent: "").representedObject = node
+            add(String(localized: "Rename…", bundle: .module, comment: "Sidebar context menu on a pinned folder"), #selector(menuRenamePin(_:)))
+            add(String(localized: "Unpin", bundle: .module, comment: "Sidebar context menu: remove a pinned folder"), #selector(menuUnpin(_:)))
         case .volume(let ejectable) where ejectable:
             menu.addItem(.separator())
-            menu.addItem(withTitle: "Eject “\(node.title)”", action: #selector(menuEject(_:)), keyEquivalent: "").representedObject = node
+            add(String(localized: "Eject “\(node.title)”", bundle: .module, comment: "Sidebar context menu: the volume name"),
+                #selector(menuEject(_:)))
         case .place:
             menu.addItem(.separator())
-            menu.addItem(withTitle: "Pin to Sidebar", action: #selector(menuPin(_:)), keyEquivalent: "").representedObject = node
+            add(Command.pin.title, #selector(menuPin(_:)))
         default:
             break
         }
@@ -295,7 +315,9 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
 
     @objc private func menuPin(_ sender: NSMenuItem) {
         guard let node = sender.representedObject as? SidebarNode, let path = node.path else { return }
-        vm.app.send(.addPin(path: path, name: node.title, at: nil))
+        // No name: the pin takes the folder's own name. Persisting the sidebar's (localized) title would
+        // freeze it in the current language. Renaming a pin still stores the name the user typed.
+        vm.app.send(.addPin(path: path, name: nil, at: nil))
     }
 
     @objc private func menuUnpin(_ sender: NSMenuItem) {
@@ -306,9 +328,9 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
     @objc private func menuRenamePin(_ sender: NSMenuItem) {
         guard let node = sender.representedObject as? SidebarNode, case .pin(let id) = node.kind else { return }
         let alert = NSAlert()
-        alert.messageText = "Rename Pinned Folder"
-        alert.addButton(withTitle: "Rename")
-        alert.addButton(withTitle: "Cancel")
+        alert.messageText = String(localized: "Rename Pinned Folder", bundle: .module, comment: "Alert title, from the sidebar’s Rename… menu item")
+        alert.addButton(withTitle: String(localized: "Rename", bundle: .module, comment: "Button in the Rename Pinned Folder alert"))
+        alert.addButton(withTitle: UIStrings.cancel)
         let field = NSTextField(string: node.title)
         field.frame = NSRect(x: 0, y: 0, width: 260, height: 24)
         alert.accessoryView = field
@@ -335,8 +357,10 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
         } catch {
             log.error("eject failed for \(path: path): \(error.localizedDescription)")
             let alert = NSAlert(error: error)
-            alert.messageText = "“\(node.title)” couldn't be ejected"
-            alert.informativeText = "It may be in use by another app. \(error.localizedDescription)"
+            alert.messageText = String(localized: "“\(node.title)” couldn't be ejected", bundle: .module,
+                                       comment: "Alert title: the volume name")
+            alert.informativeText = String(localized: "It may be in use by another app. \(error.localizedDescription)", bundle: .module,
+                                           comment: "Eject failure alert; the system's error message follows")
             alert.runModal()
         }
     }
@@ -475,7 +499,8 @@ final class SidebarRowView: NSTableCellView {
         title.translatesAutoresizingMaskIntoConstraints = false
         title.lineBreakMode = .byTruncatingTail
         ejectButton.translatesAutoresizingMaskIntoConstraints = false
-        ejectButton.image = NSImage(systemSymbolName: "eject.fill", accessibilityDescription: "Eject")
+        let ejectLabel = String(localized: "Eject", bundle: .module, comment: "Accessibility label: eject button on a sidebar volume row")
+        ejectButton.image = NSImage(systemSymbolName: "eject.fill", accessibilityDescription: ejectLabel)
         ejectButton.isBordered = false
         ejectButton.contentTintColor = .secondaryLabelColor
         ejectButton.target = self

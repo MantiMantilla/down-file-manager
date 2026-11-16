@@ -224,10 +224,10 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
         tableView.autosaveName = "FileList"
         tableView.autosaveTableColumns = true
 
-        addColumn(Col.name, "Name", width: 320, min: 140, sortKey: .name)
-        addColumn(Col.size, "Size", width: 90, min: 60, sortKey: .size)
-        addColumn(Col.modified, "Modified", width: 170, min: 100, sortKey: .modified)
-        addColumn(Col.kind, "Kind", width: 140, min: 60, sortKey: .kind)
+        addColumn(Col.name, width: 320, min: 140, sortKey: .name)
+        addColumn(Col.size, width: 90, min: 60, sortKey: .size)
+        addColumn(Col.modified, width: 170, min: 100, sortKey: .modified)
+        addColumn(Col.kind, width: 140, min: 60, sortKey: .kind)
 
         tableView.dataSource = self
         tableView.delegate = self
@@ -254,10 +254,9 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
         updateSortIndicators()
     }
 
-    private func addColumn(_ id: NSUserInterfaceItemIdentifier, _ title: String, width: CGFloat, min: CGFloat,
-                           sortKey: SortField) {
+    private func addColumn(_ id: NSUserInterfaceItemIdentifier, width: CGFloat, min: CGFloat, sortKey: SortField) {
         let col = NSTableColumn(identifier: id)
-        col.title = title
+        col.title = UIStrings.title(of: sortKey)
         col.width = width
         col.minWidth = min
         col.sortDescriptorPrototype = NSSortDescriptor(key: sortKey.rawValue, ascending: true)
@@ -346,9 +345,12 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
         case Col.name:
             cell.textField?.stringValue = DisplayName.sanitize(item.name)
             cell.imageView?.image = IconCache.shared.icon(for: item)
-            cell.textField?.toolTip = DisplayName.needsSanitizing(item.name) ? "Name contains hidden control characters" : nil
+            cell.textField?.toolTip = DisplayName.needsSanitizing(item.name)
+                ? String(localized: "Name contains hidden control characters", bundle: .module,
+                         comment: "Tooltip on a file name whose hidden control characters are shown as visible escapes")
+                : nil
         case Col.size:
-            cell.textField?.stringValue = sizeText(item)
+            cell.textField?.stringValue = Self.sizeText(item)
         case Col.modified:
             cell.textField?.stringValue = Self.dateText(item.modified)
         case Col.kind:
@@ -397,10 +399,11 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
         return cell
     }
 
-    private func sizeText(_ item: FileItem) -> String {
+    /// Size column: an item count for folders, a byte size for files.
+    static func sizeText(_ item: FileItem) -> String {
         if item.isFolderLike {
             guard let n = item.entryCount else { return "—" }
-            return n == 1 ? "1 item" : "\(n) items"
+            return String(localized: "\(n) items", bundle: .module, comment: "Size column for a folder: how many items it contains")
         }
         return ByteFormat.string(item.size)
     }
@@ -418,13 +421,18 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
         return f
     }()
 
-    /// Nautilus-style: "10:42" today, "Yesterday", weekday this week, otherwise a date.
+    /// Nautilus-style: "10:42" today, "Yesterday 10:42", weekday this week, otherwise a date.
     static func dateText(_ date: Date) -> String {
         let cal = Calendar.current
-        if cal.isDateInToday(date) { return timeFormatter.string(from: date) }
-        if cal.isDateInYesterday(date) { return "Yesterday " + timeFormatter.string(from: date) }
+        let time = timeFormatter.string(from: date)
+        if cal.isDateInToday(date) { return time }
+        if cal.isDateInYesterday(date) {
+            return String(localized: "Yesterday \(time)", bundle: .module, comment: "Modified column: yesterday, then the time")
+        }
         if let days = cal.dateComponents([.day], from: date, to: Date()).day, days < 7, days >= 0 {
-            return date.formatted(.dateTime.weekday(.wide)) + " " + timeFormatter.string(from: date)
+            let weekday = date.formatted(.dateTime.weekday(.wide))
+            return String(localized: "\(weekday) \(time)", bundle: .module,
+                          comment: "Modified column, this week: the weekday name, then the time")
         }
         return dateFormatter.string(from: date)
     }
@@ -483,7 +491,7 @@ final class FileListViewController: NSViewController, NSTableViewDataSource, NST
         }
         if vm.selection.count == 1, let item = vm.selectedItems.first, item.isFolderLike {
             menu.insertItem(NSMenuItem.separator(), at: 1)
-            let pin = NSMenuItem(title: "Pin to Sidebar", action: #selector(pinSelection(_:)), keyEquivalent: "")
+            let pin = NSMenuItem(title: Command.pin.title, action: #selector(pinSelection(_:)), keyEquivalent: "")
             pin.target = self
             menu.insertItem(pin, at: 2)
         }

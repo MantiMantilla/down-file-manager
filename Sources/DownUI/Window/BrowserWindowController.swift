@@ -76,7 +76,7 @@ public final class BrowserWindowController: NSWindowController, NSWindowDelegate
         tokens.append(track { [weak self] in
             guard let self, let window = self.window else { return }
             let loc = vm.location
-            window.title = loc.path == vm.app.env.homePath ? "Home" : loc.name
+            window.title = loc.path == vm.app.env.homePath ? UIStrings.home : loc.name
             window.representedURL = loc.isLocal ? loc.url : nil
             window.tab.title = window.title
         })
@@ -114,12 +114,13 @@ public final class BrowserWindowController: NSWindowController, NSWindowDelegate
                         willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
         switch id {
         case ToolbarID.navigation:
+            let back = Command.back.title, forward = Command.forward.title
             let group = NSToolbarItemGroup(itemIdentifier: id, images: [
-                NSImage(systemSymbolName: "chevron.left", accessibilityDescription: "Back")!,
-                NSImage(systemSymbolName: "chevron.right", accessibilityDescription: "Forward")!,
-            ], selectionMode: .momentary, labels: ["Back", "Forward"], target: self, action: #selector(navClicked(_:)))
+                NSImage(systemSymbolName: "chevron.left", accessibilityDescription: back)!,
+                NSImage(systemSymbolName: "chevron.right", accessibilityDescription: forward)!,
+            ], selectionMode: .momentary, labels: [back, forward], target: self, action: #selector(navClicked(_:)))
             group.controlRepresentation = .expanded
-            group.label = "Back/Forward"
+            group.label = String(localized: "Back/Forward", bundle: .module, comment: "Toolbar: label of the back and forward buttons")
             group.autovalidates = false
             group.subitems.forEach { $0.autovalidates = false }
             navGroup = group
@@ -128,16 +129,19 @@ public final class BrowserWindowController: NSWindowController, NSWindowDelegate
         case ToolbarID.pathBar:
             let item = NSToolbarItem(itemIdentifier: id)
             item.view = pathBar
-            item.label = "Location"
+            item.label = String(localized: "Location", bundle: .module, comment: "Toolbar: label of the path bar")
             item.visibilityPriority = .high
             return item
         case ToolbarID.viewMode:
+            let list = String(localized: "List", bundle: .module, comment: "Toolbar: view-mode button, show files as a list (noun)")
+            let grid = String(localized: "Grid", bundle: .module, comment: "Toolbar: view-mode button, show files as icons (noun)")
+            let columns = String(localized: "Columns", bundle: .module, comment: "Toolbar: view-mode button, show files in columns (noun)")
             let group = NSToolbarItemGroup(itemIdentifier: id, images: [
-                NSImage(systemSymbolName: "list.bullet", accessibilityDescription: "List")!,
-                NSImage(systemSymbolName: "square.grid.2x2", accessibilityDescription: "Grid")!,
-                NSImage(systemSymbolName: "rectangle.split.3x1", accessibilityDescription: "Columns")!,
-            ], selectionMode: .selectOne, labels: ["List", "Grid", "Columns"], target: self, action: #selector(viewModeClicked(_:)))
-            group.label = "View"
+                NSImage(systemSymbolName: "list.bullet", accessibilityDescription: list)!,
+                NSImage(systemSymbolName: "square.grid.2x2", accessibilityDescription: grid)!,
+                NSImage(systemSymbolName: "rectangle.split.3x1", accessibilityDescription: columns)!,
+            ], selectionMode: .selectOne, labels: [list, grid, columns], target: self, action: #selector(viewModeClicked(_:)))
+            group.label = UIStrings.view
             group.autovalidates = false
             group.subitems.forEach { $0.autovalidates = false }
             viewGroup = group
@@ -145,16 +149,18 @@ public final class BrowserWindowController: NSWindowController, NSWindowDelegate
             return group
         case ToolbarID.search:
             let item = NSToolbarItem(itemIdentifier: id)
-            item.image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: "Search")
-            item.label = "Search"
-            item.toolTip = "Search (⌘F) — coming soon"
+            item.image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: Command.search.title)
+            item.label = Command.search.title
+            item.toolTip = String(localized: "Search (⌘F) — coming soon", bundle: .module,
+                                  comment: "Toolbar: tooltip of the search button, which isn't available yet")
             item.isEnabled = false
             item.autovalidates = false
             return item
         case ToolbarID.menu:
             let item = NSMenuToolbarItem(itemIdentifier: id)
-            item.image = NSImage(systemSymbolName: "line.3.horizontal", accessibilityDescription: "Menu")
-            item.label = "Menu"
+            let label = String(localized: "Menu", bundle: .module, comment: "Toolbar: the button that opens a menu of common commands")
+            item.image = NSImage(systemSymbolName: "line.3.horizontal", accessibilityDescription: label)
+            item.label = label
             item.showsIndicator = false
             item.menu = hamburgerMenu()
             return item
@@ -169,16 +175,18 @@ public final class BrowserWindowController: NSWindowController, NSWindowDelegate
         for c in [Command.newWindow, .newTab, .newFolder] { menu.addItem(MainMenu.item(for: c, keybindings: kb)) }
         menu.addItem(.separator())
         menu.addItem(MainMenu.item(for: .toggleHidden, keybindings: kb))
-        let sortItem = NSMenuItem(title: "Sort By", action: nil, keyEquivalent: "")
+        let sortItem = NSMenuItem(title: String(localized: "Sort By", bundle: .module, comment: "Toolbar menu: submenu of sort orders"),
+                                  action: nil, keyEquivalent: "")
         let sortMenu = NSMenu()
         for field in SortField.allCases {
-            let i = NSMenuItem(title: field.rawValue.capitalized, action: #selector(sortMenuClicked(_:)), keyEquivalent: "")
+            let i = NSMenuItem(title: UIStrings.title(of: field), action: #selector(sortMenuClicked(_:)), keyEquivalent: "")
             i.representedObject = field.rawValue
             i.target = self
             sortMenu.addItem(i)
         }
         sortMenu.addItem(.separator())
-        let folders = NSMenuItem(title: "Folders First", action: #selector(toggleFoldersFirst(_:)), keyEquivalent: "")
+        let folders = NSMenuItem(title: String(localized: "Folders First", bundle: .module,
+                                               comment: "Toolbar menu, Sort By submenu: list folders before files"), action: #selector(toggleFoldersFirst(_:)), keyEquivalent: "")
         folders.target = self
         sortMenu.addItem(folders)
         sortItem.submenu = sortMenu
@@ -303,7 +311,9 @@ public final class BrowserWindowController: NSWindowController, NSWindowDelegate
             item.state = vm.viewMode == .list ? .on : .off
             return true
         case .toggleSidebar:
-            item.title = (split.splitViewItems.first?.isCollapsed ?? false) ? "Show Sidebar" : "Hide Sidebar"
+            item.title = (split.splitViewItems.first?.isCollapsed ?? false)
+                ? String(localized: "Show Sidebar", bundle: .module, comment: "View menu: shown in place of Toggle Sidebar while it is hidden")
+                : String(localized: "Hide Sidebar", bundle: .module, comment: "View menu: shown in place of Toggle Sidebar while it is visible")
             return true
         case .debugConsole:
             return vm.app.debugConsoleAvailable  // visibility is kept in sync by the app delegate

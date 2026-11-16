@@ -99,7 +99,8 @@ final class PathBarView: NSView, NSTextFieldDelegate {
         field.delegate = self
         field.bezelStyle = .roundedBezel
         field.focusRingType = .default
-        field.placeholderString = "Type a path, e.g. ~/Documents"
+        field.placeholderString = String(localized: "Type a path, e.g. ~/Documents", bundle: .module,
+                                         comment: "Path bar placeholder while typing a location")
         field.cell?.isScrollable = true
         field.cell?.wraps = false
         field.lineBreakMode = .byTruncatingHead
@@ -148,7 +149,7 @@ final class PathBarView: NSView, NSTextFieldDelegate {
             NSImage(systemSymbolName: name, accessibilityDescription: nil)
         }
         if path == home || path.hasPrefix(home + "/") {
-            var segs = [Segment(title: "Home", image: symbol("house"), location: .file(home))]
+            var segs = [Segment(title: UIStrings.home, image: symbol("house"), location: .file(home))]
             let rest = path.dropFirst(home.count).split(separator: "/")
             var cur = home
             for part in rest {

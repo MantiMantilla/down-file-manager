@@ -1,71 +1,386 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@\n\nmacOS may need you to allow Down to access this location." : {
+      "comment" : "Shown under Access Denied; the argument is the error message"
+    },
+    "%@ %@" : {
+      "comment" : "Modified column, this week: the weekday name, then the time",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "comment" : "Transfer failure alert, one line per item: the file name, then the error message",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%lld items" : {
+      "comment" : "Size column for a folder: how many items it contains",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld items couldn't be transferred" : {
+      "comment" : "Alert title: several dropped or pasted items failed",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item couldn't be transferred"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items couldn't be transferred"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld items selected" : {
+      "comment" : "Selection pill, several items (only folders, so no size): how many",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item selected"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items selected"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld items selected (%@)" : {
+      "comment" : "Selection pill, several items: how many, and the total size of the selected files",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@items@ selected (%2$@)"
+          },
+          "substitutions" : {
+            "items" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg item"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg items"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "About %@" : {
+      "comment" : "App menu: opens the About panel. The argument is the app name"
+    },
+    "Access Denied" : {
+      "comment" : "Title shown in place of a folder Down may not read"
+    },
     "Adds View → Debug Console (⌥⌘J) with live logs, tab state and performance timings." : {
-
+      "comment" : "Settings, Advanced: caption under Enable Debug Console. View → Debug Console is a menu path"
     },
     "Advanced" : {
-
+      "comment" : "Settings tab"
     },
     "Anonymize file names in copied logs and diagnostics" : {
-
+      "comment" : "Settings, Advanced: checkbox"
     },
     "Appearance" : {
-
+      "comment" : "Settings, General: light/dark theme picker"
     },
     "Automatic" : {
-
+      "comment" : "Settings, Open in Terminal uses: pick the first installed terminal"
+    },
+    "Back/Forward" : {
+      "comment" : "Toolbar: label of the back and forward buttons"
+    },
+    "Bring All to Front" : {
+      "comment" : "Window menu: bring all of the app’s windows forward"
+    },
+    "Can't Open Folder" : {
+      "comment" : "Title shown in place of a folder that failed to load"
+    },
+    "Cancel" : {
+      "comment" : "Alert button"
+    },
+    "Columns" : {
+      "comment" : "Toolbar: view-mode button, show files in columns (noun)"
+    },
+    "Couldn't complete the operation" : {
+      "comment" : "Alert title: one dropped or pasted item failed"
     },
     "Dark" : {
-
+      "comment" : "Settings, Appearance: dark theme"
     },
     "Debugging" : {
-
+      "comment" : "Settings, Advanced: section header"
+    },
+    "Devices" : {
+      "comment" : "Sidebar section header: disks and volumes"
+    },
+    "Down Settings" : {
+      "comment" : "Settings window title"
+    },
+    "Edit" : {
+      "comment" : "Menu bar title"
+    },
+    "Eject" : {
+      "comment" : "Accessibility label: eject button on a sidebar volume row"
+    },
+    "Eject “%@”" : {
+      "comment" : "Sidebar context menu: the volume name"
     },
     "Enable Debug Console" : {
-
+      "comment" : "Settings, Advanced: checkbox"
+    },
+    "File" : {
+      "comment" : "Menu bar title"
+    },
+    "Folder is Empty" : {
+      "comment" : "Title shown in place of an empty folder's file list"
+    },
+    "Folders First" : {
+      "comment" : "Toolbar menu, Sort By submenu: list folders before files"
     },
     "GNOME Files shortcuts, translated for macOS (Ctrl → ⌘, Alt → ⌥). Overrides are stored in settings.json under “shortcutOverrides”." : {
-
+      "comment" : "Settings, Shortcuts: intro. Keep settings.json and shortcutOverrides untranslated"
     },
     "General" : {
-
+      "comment" : "Settings tab"
+    },
+    "Go" : {
+      "comment" : "Menu bar title"
+    },
+    "Go to Tab 1…9" : {
+      "comment" : "Settings, Shortcuts: one row for the Go to Tab 1 to 9 commands"
+    },
+    "Grid" : {
+      "comment" : "Toolbar: view-mode button, show files as icons (noun)"
+    },
+    "Help" : {
+      "comment" : "Menu bar title"
+    },
+    "Hidden files are not shown (⌘H)." : {
+      "comment" : "Shown under Folder is Empty when hidden files are off"
+    },
+    "Hide %@" : {
+      "comment" : "App menu: hides the app. The argument is the app name"
+    },
+    "Hide Others" : {
+      "comment" : "App menu: hide the other apps"
+    },
+    "Hide Sidebar" : {
+      "comment" : "View menu: shown in place of Toggle Sidebar while it is visible"
+    },
+    "Home" : {
+      "comment" : "The user's home folder: sidebar row, path bar and window title"
     },
     "In the file list: Home/End (fn←/fn→) jump to the first/last item, Page Up/Down (fn↑/fn↓) move by a screenful. Hold ⇧ to extend the selection." : {
-
+      "comment" : "Settings, Shortcuts: explains the navigation keys. Home, End, Page Up and Page Down are key names"
+    },
+    "It may be in use by another app. %@" : {
+      "comment" : "Eject failure alert; the system's error message follows"
+    },
+    "Kind" : {
+      "comment" : "File list column header (type of file), and an item in the Sort By menu"
     },
     "Light" : {
-
+      "comment" : "Settings, Appearance: light theme"
+    },
+    "List" : {
+      "comment" : "Toolbar: view-mode button, show files as a list (noun)"
+    },
+    "Location" : {
+      "comment" : "Toolbar: label of the path bar"
     },
     "Logs" : {
-
+      "comment" : "Settings, Advanced: section header"
+    },
+    "Menu" : {
+      "comment" : "Toolbar: the button that opens a menu of common commands"
+    },
+    "Minimize" : {
+      "comment" : "Window menu: minimize the window to the Dock"
+    },
+    "Modified" : {
+      "comment" : "File list column header (date modified), and an item in the Sort By menu"
+    },
+    "Name" : {
+      "comment" : "File list column header, and an item in the Sort By menu"
+    },
+    "Name contains hidden control characters" : {
+      "comment" : "Tooltip on a file name whose hidden control characters are shown as visible escapes"
+    },
+    "Open Privacy Settings" : {
+      "comment" : "Button under the Access Denied message: opens System Settings"
+    },
+    "Open in New Tab" : {
+      "comment" : "Sidebar context menu"
     },
     "Open in Terminal uses" : {
-
+      "comment" : "Settings, General: picker for the terminal app; followed by app names"
+    },
+    "Other" : {
+      "comment" : "Sidebar section header: everything else (holds the Trash)"
+    },
+    "Pinned" : {
+      "comment" : "Sidebar section header: folders the user pinned"
+    },
+    "Places" : {
+      "comment" : "Sidebar section header: standard folders"
+    },
+    "Quit %@" : {
+      "comment" : "App menu: quits the app. The argument is the app name"
+    },
+    "Rename" : {
+      "comment" : "Button in the Rename Pinned Folder alert"
+    },
+    "Rename Pinned Folder" : {
+      "comment" : "Alert title, from the sidebar’s Rename… menu item"
+    },
+    "Rename…" : {
+      "comment" : "Sidebar context menu on a pinned folder"
+    },
+    "Search (⌘F) — coming soon" : {
+      "comment" : "Toolbar: tooltip of the search button, which isn't available yet"
+    },
+    "Services" : {
+      "comment" : "App menu: the system Services submenu"
     },
     "Shortcuts" : {
-
+      "comment" : "Settings tab: keyboard shortcuts"
+    },
+    "Show All" : {
+      "comment" : "App menu: show all hidden apps"
+    },
+    "Show Sidebar" : {
+      "comment" : "View menu: shown in place of Toggle Sidebar while it is hidden"
     },
     "Show hidden files" : {
-
+      "comment" : "Settings, General: checkbox"
+    },
+    "Size" : {
+      "comment" : "File list column header, and an item in the Sort By menu"
+    },
+    "Sort By" : {
+      "comment" : "Toolbar menu: submenu of sort orders"
     },
     "Sort folders before files" : {
-
+      "comment" : "Settings, General: checkbox"
     },
     "Started with --debug: console and verbose logging are on for this session." : {
-
+      "comment" : "Settings, Advanced: shown when launched with the --debug option (keep --debug as is)"
     },
     "System" : {
-
+      "comment" : "Settings, Appearance: follow the system theme"
     },
     "Trace categories" : {
-
+      "comment" : "Settings, Advanced: label before the log category toggles"
+    },
+    "Trash" : {
+      "comment" : "Sidebar row: the Trash"
+    },
+    "Type a path, e.g. ~/Documents" : {
+      "comment" : "Path bar placeholder while typing a location"
+    },
+    "Unpin" : {
+      "comment" : "Sidebar context menu: remove a pinned folder"
     },
     "Verbose logging" : {
-
+      "comment" : "Settings, Advanced: checkbox"
+    },
+    "View" : {
+      "comment" : "Menu bar title, and the label of the toolbar's view-mode buttons"
+    },
+    "Window" : {
+      "comment" : "Menu bar title"
     },
     "Write logs to ~/Library/Logs/Down" : {
-
+      "comment" : "Settings, Advanced: checkbox. Keep the path as is"
+    },
+    "Yesterday %@" : {
+      "comment" : "Modified column: yesterday, then the time"
+    },
+    "Zoom" : {
+      "comment" : "Window menu: zoom the window (verb)"
+    },
+    "“%@” couldn't be ejected" : {
+      "comment" : "Alert title: the volume name"
+    },
+    "“%@” is no longer available." : {
+      "comment" : "Notice when the open folder was deleted or unmounted: the folder name"
+    },
+    "“%@” selected" : {
+      "comment" : "Selection pill, one item: its name"
+    },
+    "“%@” selected (%@)" : {
+      "comment" : "Selection pill, one file: its name and size",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” selected (%2$@)"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
