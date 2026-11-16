@@ -7,10 +7,10 @@ import DownCore
 final class ContentViewController: NSViewController {
     let vm: BrowserViewModel
     let list: FileListViewController
-    private let statusPill = PillLabel()
+    let statusPill = PillLabel()  // internal for tests
     private let noticePill = PillLabel()
     private let spinner = NSProgressIndicator()
-    private let emptyStack = NSStackView()
+    let emptyStack = NSStackView()  // internal for tests
     private let emptyIcon = NSImageView()
     private let emptyTitle = NSTextField(labelWithString: "")
     private let emptyDetail = NSTextField(wrappingLabelWithString: "")
@@ -84,14 +84,32 @@ final class ContentViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         tokens.append(track { [weak self] in self?.updateOverlays() })
+        list.onMouseTrackingEnded = { [weak self] in
+            guard let self, overlaysDeferred else { return }
+            overlaysDeferred = false
+            updateOverlays()
+        }
     }
 
     deinit { MainActor.assumeIsolated { tokens.forEach { $0.cancel() } } }
 
+    /// An overlay update skipped while the mouse was down in the list; runs at mouse-up.
+    private(set) var overlaysDeferred = false
+
     private func updateOverlays() {
+        // Read everything first: this runs inside `track`, which only re-fires for what was read.
         let state = vm.loadState
         let items = vm.items
         let selection = vm.selection
+        let notice = vm.notice
+        let showHidden = vm.showHidden
+
+        // The list holds its rows until mouse-up, so the overlays must too, or "Folder is Empty"
+        // or the selection pill could contradict the rows still on screen.
+        if list.isTrackingMouse {
+            overlaysDeferred = true
+            return
+        }
 
         // Spinner only if loading takes a moment and nothing is visible yet.
         if state == .loading && items.isEmpty {
@@ -108,7 +126,7 @@ final class ContentViewController: NSViewController {
                       button: denied)
         case .loaded where items.isEmpty:
             showEmpty(symbol: "folder", title: "Folder is Empty",
-                      detail: vm.showHidden ? "" : "Hidden files are not shown (⌘H).", button: false)
+                      detail: showHidden ? "" : "Hidden files are not shown (⌘H).", button: false)
         default:
             emptyStack.isHidden = true
         }
@@ -125,7 +143,7 @@ final class ContentViewController: NSViewController {
             statusPill.isHidden = false
         }
 
-        if let notice = vm.notice {
+        if let notice {
             noticePill.stringValue = notice
             noticePill.isHidden = false
             let vm = self.vm

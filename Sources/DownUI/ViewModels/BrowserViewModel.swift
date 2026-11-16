@@ -139,7 +139,8 @@ public final class BrowserViewModel {
     public private(set) var springOrigin: Location?
     /// Transient message for the toast/overlay (e.g. "folder was removed").
     public private(set) var notice: String?
-    /// Bumped whenever `items` changes, so AppKit views can cheaply detect reloads.
+    /// Bumped whenever `items` actually changes (not when a refresh yields the same rows),
+    /// so AppKit views can cheaply detect reloads.
     public private(set) var itemsRevision = 0
     /// Path to select and reveal once the listing arrives (e.g. the folder we came up from).
     public private(set) var pendingReveal: String?
@@ -232,7 +233,9 @@ public final class BrowserViewModel {
             open(items.filter { set.contains($0.path) }, id: id)
 
         case .select(let paths):
-            selection = paths
+            // Keep only paths that still exist. The file list holds its rows while the mouse is down
+            // (reloads wait for mouse-up), so it can report a row whose file was deleted mid-press.
+            selection = paths.filter { all[$0] != nil }
 
         case .setSort(let order):
             guard order != sort else { return }
@@ -519,8 +522,14 @@ public final class BrowserViewModel {
     }
 
     private func setItems(_ new: [FileItem]) {
-        items = new
-        itemsRevision &+= 1
+        // Only a real change bumps the revision: every bump makes the list reload, which drops the
+        // selection AppKit is tracking. Changes to hidden items (e.g. ~/Library, which changes several
+        // times a second) re-sort to the same visible rows and must not reload the list. `==` alone
+        // isn't enough: it ignores e.g. a symlink's target kind, which changes the row's icon and Open.
+        if new.count != items.count || !zip(new, items).allSatisfy({ $0.isIdentical(to: $1) }) {
+            items = new
+            itemsRevision &+= 1
+        }
         if !selection.isEmpty {
             let present = Set(new.lazy.map(\.path))
             let kept = selection.intersection(present)
