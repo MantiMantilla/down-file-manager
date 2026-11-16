@@ -5,6 +5,8 @@ import PackageDescription
 // and produces Down.app. `swift build` / `swift test` keep working on the package alone.
 let package = Package(
     name: "Down",
+    // Each module keeps its user-facing strings in its own Localizable.xcstrings (see README → Localization).
+    defaultLocalization: "en",
     platforms: [.macOS(.v26)],
     products: [
         .library(name: "DownUI", targets: ["DownUI"]),

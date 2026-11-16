@@ -100,6 +100,19 @@ public final class DownAppDelegate: NSObject, NSApplicationDelegate, AppCoordina
                     try? rep.representation(using: .png, properties: [:])?.write(to: URL(filePath: partPath))
                 }
             }
+            // DOWN_SNAPSHOT_SETTINGS=1 also captures the Settings window (General pane), e.g. for pseudo-language review.
+            if ProcessInfo.processInfo.environment["DOWN_SNAPSHOT_SETTINGS"] == "1" {
+                showSettings()
+                // The grouped Form has no intrinsic height; give it room so the whole pane renders.
+                settingsWindow?.window?.setContentSize(NSSize(width: 560, height: 420))
+                try? await Task.sleep(for: .seconds(1))
+                if let frameView = settingsWindow?.window?.contentView?.superview,
+                   let rep = frameView.bitmapImageRepForCachingDisplay(in: frameView.bounds) {
+                    frameView.cacheDisplay(in: frameView.bounds, to: rep)
+                    let settingsPath = path.replacingOccurrences(of: ".png", with: "-settings.png")
+                    try? rep.representation(using: .png, properties: [:])?.write(to: URL(filePath: settingsPath))
+                }
+            }
             NSApp.terminate(nil)
         }
     }
