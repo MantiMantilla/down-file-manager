@@ -15,7 +15,10 @@ struct SettingsView: View {
             AdvancedPane(app: app)
                 .tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }
         }
-        .frame(width: 520)
+        // An explicit height: the panes are grouped Forms, which scroll and so have no height of their own
+        // (sized from them, the window opened about 100 pt tall). Tall enough for the Shortcuts pane,
+        // which doesn't scroll; SettingsWindowTests checks that it fits.
+        .frame(width: 520, height: 460)
         .scenePadding()
     }
 }
@@ -51,7 +54,7 @@ private struct GeneralPane: View {
     }
 }
 
-private struct ShortcutsPane: View {
+struct ShortcutsPane: View {
     let app: AppViewModel
 
     var body: some View {
@@ -126,11 +129,13 @@ private struct AdvancedPane: View {
 @MainActor
 final class SettingsWindowController: NSWindowController {
     init(app: AppViewModel) {
+        // The hosting controller sizes the window from SettingsView, which sets its own size.
         let hosting = NSHostingController(rootView: SettingsView(app: app))
         let window = NSWindow(contentViewController: hosting)
         window.title = "Down Settings"
         window.styleMask = [.titled, .closable]
-        window.setFrameAutosaveName("DownSettings")
+        // No frame autosave: showSettings() centers the window when it's created, and the size comes from
+        // SettingsView. (Builds before this saved a ~100 pt tall frame as "DownSettings"; it's now ignored.)
         super.init(window: window)
     }
 
