@@ -24,7 +24,8 @@ public final class DebugConsoleWindowController: NSWindowController, NSWindowDel
         let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 900, height: 420),
                             styleMask: [.titled, .closable, .resizable, .utilityWindow, .nonactivatingPanel],
                             backing: .buffered, defer: true)
-        panel.title = "Debug Console"
+        // The window title matches the menu command; the console's internals stay in English (developer tool).
+        panel.title = Command.debugConsole.title
         panel.isFloatingPanel = false
         panel.hidesOnDeactivate = false
         panel.becomesKeyOnlyIfNeeded = true

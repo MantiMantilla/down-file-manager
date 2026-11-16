@@ -102,6 +102,19 @@ struct DisplayNameTests {
             #expect(DisplayName.sanitize(n) == n)
         }
     }
+
+    /// Unknown extensions are named in the Kind column ("XYZ file"), so they are sanitized too.
+    /// (Bidi controls never get this far: NSString reports no extension for them, so the kind is "Document".)
+    @Test func unknownKindsSanitizeTheExtension() {
+        #expect(TypeCache.kindDescription(for: FakeFileSource.item("/x/a.b\u{1}c")) == "B\\u{1}C file")
+        #expect(TypeCache.kindDescription(for: FakeFileSource.item("/x/report.f\u{7F}dp")) == "F\\u{7F}DP file")
+    }
+
+    /// A bidi override in a name must not reorder the message around it.
+    @Test func errorMessagesSanitizeNames() {
+        #expect(FileSourceError.notADirectory("/x/\u{202E}gnp.exe").errorDescription == "“\\u{202E}gnp.exe” is not a folder.")
+        #expect(FileSourceError.posix(ENOENT, path: "/x/a\nb").errorDescription == "“a\\u{A}b” doesn't exist.")
+    }
 }
 
 @Suite("Keybindings")
@@ -146,6 +159,13 @@ struct KeybindingTests {
     @Test func displayString() {
         #expect(KeyCombo("left", .option).description == "⌥←")
         #expect(KeyCombo("n", [.command, .shift]).description == "⇧⌘N")
+    }
+
+    /// Named keys are localized for display only; `description` (used in logs) stays fixed.
+    @Test func displayStringLocalizesNamedKeysOnly() {
+        #expect(KeyCombo("space").description == "Space")
+        #expect(KeyCombo("space", .shift).displayDescription == "⇧Space")
+        #expect(KeyCombo("left", .option).displayDescription == "⌥←")
     }
 }
 

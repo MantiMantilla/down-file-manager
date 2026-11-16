@@ -21,6 +21,7 @@ make run          # debug build, launches in the foreground with debug logs on s
 make app          # release build → build/Down.app
 make install      # → ~/Applications/Down.app and ~/.local/bin/down
 make test         # unit + ViewModel + in-process AppKit tests (swift test)
+make check        # make test + the String Catalog check; run it before opening a PR
 make test-integration   # adds real-filesystem tests (temp dirs, FSEvents, copyfile)
 make test-xcode   # the same tests through the Xcode scheme
 make test-tsan    # unit + integration tests under Thread Sanitizer
@@ -85,6 +86,50 @@ MVVM with one-way data flow: **View → Action → ViewModel → State → View*
 - `DownUI`: `@MainActor @Observable` ViewModels, plus AppKit views (list, sidebar, path bar) and SwiftUI (settings).
   - Each ViewModel has a single `send(_:)` mutator. Slow work runs as keyed effects whose results come back as actions.
 - `DownTestSupport`: fakes (`FakeFileSource`, `FakeWorkspace`), `TempDir`, `TestLogSink`.
+
+## Localization
+
+Every user-facing string goes through a String Catalog. English is the only language so far.
+
+- `Sources/DownCore/Localizable.xcstrings` and `Sources/DownUI/Localizable.xcstrings` hold each module's strings. They are compiled into the `Down_DownCore.bundle` and `Down_DownUI.bundle` resource bundles inside `Down.app`. For now only the English plural rules end up in there: the key is the English text, and it's used as is until a translation exists.
+- `App/InfoPlist.xcstrings` holds the privacy usage descriptions. `Resources/Info.plist` keeps the English text, and a test checks that the two match.
+
+### Writing strings
+
+- Use `String(localized: "Move to Trash", bundle: .module, comment: "File menu and context menu")`. Without `bundle: .module`, the lookup goes to the app's main bundle: it still shows the English key, but it never gets translated.
+- Short strings (three words or fewer) need a comment that says where they appear. A test enforces this.
+- In SwiftUI, pass that `String` to the view, as in `Toggle(String(localized: …, bundle: .module), isOn: …)`. A bare literal, as in `Text("…")`, is looked up in the main bundle too. Use `Text(verbatim:)` for text that isn't translated.
+- Write whole sentences with interpolations, such as `"“\(name)” selected"`. Don't concatenate fragments. Use plural variations in the catalog for counts.
+- File names inserted into text go through `DisplayName.sanitize`.
+- Strings shown in several places live once in `UIStrings` (DownUI). Command titles come from `Command.title`.
+- Not translated:
+  - command raw values and settings keys;
+  - log messages and the diagnostics report;
+  - the Debug Console's internals;
+  - product names.
+
+  End a line with `// l10n-ignore` if a lint test flags one of these.
+
+### Keeping the catalogs in sync
+
+Building doesn't update the catalogs. After adding, changing or removing strings:
+
+```bash
+make l10n-sync    # merges the strings used in code into the catalogs (adds keys, drops unused ones)
+make l10n-check   # fails if the catalogs are out of date; part of `make check`
+```
+
+The keys are the English text. If the same English text means different things in two places, `l10n-check` reports the clashing comments. Give one of them a semantic key: `String(localized: "sidebar.section.other", defaultValue: "Other", bundle: .module, comment: …)`.
+
+`LocalizationLintTests` (part of `make test`) flags localized strings without `bundle:`, and literals passed directly to titles, labels, tooltips, alerts or SwiftUI views.
+
+### Checking layout
+
+```bash
+make l10n-pseudo  # build/l10n/{accented,double}*.png: main window, sidebar, path bar, Settings
+```
+
+The snapshots use Xcode's pseudolanguages. In the accented one, text that isn't accented bypasses the catalogs. Exceptions: system-provided names, such as standard folders and file kinds, and file names. The double-length one shows truncation and clipping. Plural strings look garbled in both, which is a Foundation quirk with pseudolanguages. In Xcode, choose a pseudolanguage under the scheme's Run → Options → App Language.
 
 ## Security
 

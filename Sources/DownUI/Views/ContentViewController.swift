@@ -14,7 +14,9 @@ final class ContentViewController: NSViewController {
     private let emptyIcon = NSImageView()
     private let emptyTitle = NSTextField(labelWithString: "")
     private let emptyDetail = NSTextField(wrappingLabelWithString: "")
-    private let emptyButton = NSButton(title: "Open Privacy Settings", target: nil, action: nil)
+    private let emptyButton = NSButton(title: String(localized: "Open Privacy Settings", bundle: .module,
+                                                     comment: "Button under the Access Denied message: opens System Settings"),
+                                       target: nil, action: nil)
     private var tokens: [ObservationToken] = []
 
     init(vm: BrowserViewModel) {
@@ -120,13 +122,23 @@ final class ContentViewController: NSViewController {
 
         switch state {
         case .failed(let message, let denied):
-            showEmpty(symbol: denied ? "lock" : "exclamationmark.triangle",
-                      title: denied ? "Access Denied" : "Can't Open Folder",
-                      detail: denied ? message + "\n\nmacOS may need you to allow Down to access this location." : message,
-                      button: denied)
+            if denied {
+                showEmpty(symbol: "lock",
+                          title: String(localized: "Access Denied", bundle: .module, comment: "Title shown in place of a folder Down may not read"),
+                          detail: String(localized: "\(message)\n\nmacOS may need you to allow Down to access this location.", bundle: .module,
+                                         comment: "Shown under Access Denied; the argument is the error message"),
+                          button: true)
+            } else {
+                showEmpty(symbol: "exclamationmark.triangle",
+                          title: String(localized: "Can't Open Folder", bundle: .module, comment: "Title shown in place of a folder that failed to load"),
+                          detail: message, button: false)
+            }
         case .loaded where items.isEmpty:
-            showEmpty(symbol: "folder", title: "Folder is Empty",
-                      detail: showHidden ? "" : "Hidden files are not shown (⌘H).", button: false)
+            showEmpty(symbol: "folder",
+                      title: String(localized: "Folder is Empty", bundle: .module, comment: "Title shown in place of an empty folder's file list"),
+                      detail: showHidden ? "" : String(localized: "Hidden files are not shown (⌘H).", bundle: .module,
+                                                       comment: "Shown under Folder is Empty when hidden files are off"),
+                      button: false)
         default:
             emptyStack.isHidden = true
         }
@@ -134,12 +146,7 @@ final class ContentViewController: NSViewController {
         if selection.isEmpty {
             statusPill.isHidden = true
         } else {
-            let selected = vm.selectedItems
-            let files = selected.filter { !$0.isFolderLike }
-            let bytes = files.reduce(Int64(0)) { $0 + $1.size }
-            var text = selected.count == 1 ? "“\(DisplayName.sanitize(selected[0].name))” selected" : "\(selected.count) items selected"
-            if !files.isEmpty { text += " (\(ByteFormat.string(bytes)))" }
-            statusPill.stringValue = text
+            statusPill.stringValue = Self.selectionSummary(vm.selectedItems)
             statusPill.isHidden = false
         }
 
@@ -154,6 +161,28 @@ final class ContentViewController: NSViewController {
         } else {
             noticePill.isHidden = true
         }
+    }
+
+    /// Text of the selection pill: the item's name for one item, a count for several, plus the total
+    /// size of the selected files when there are any (folders have no size). Full sentences, so
+    /// translators can reorder them.
+    static func selectionSummary(_ selected: [FileItem]) -> String {
+        let files = selected.filter { !$0.isFolderLike }
+        let size = files.isEmpty ? nil : ByteFormat.string(files.reduce(Int64(0)) { $0 + $1.size })
+        if selected.count == 1 {
+            let name = DisplayName.sanitize(selected[0].name)
+            if let size {
+                return String(localized: "“\(name)” selected (\(size))", bundle: .module,
+                              comment: "Selection pill, one file: its name and size")
+            }
+            return String(localized: "“\(name)” selected", bundle: .module, comment: "Selection pill, one item: its name")
+        }
+        if let size {
+            return String(localized: "\(selected.count) items selected (\(size))", bundle: .module,
+                          comment: "Selection pill, several items: how many, and the total size of the selected files")
+        }
+        return String(localized: "\(selected.count) items selected", bundle: .module,
+                      comment: "Selection pill, several items (only folders, so no size): how many")
     }
 
     private func showEmpty(symbol: String, title: String, detail: String, button: Bool) {

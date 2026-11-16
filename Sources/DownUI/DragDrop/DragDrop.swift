@@ -133,9 +133,17 @@ enum DropPerformer {
     static func presentFailures(_ failures: [(path: String, message: String)]) {
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = failures.count == 1 ? "Couldn't complete the operation" : "\(failures.count) items couldn't be transferred"
-        alert.informativeText = failures.prefix(5).map { "\(($0.path as NSString).lastPathComponent): \($0.message)" }
-            .joined(separator: "\n")
+        // Separate strings rather than a plural: the one-item sentence has no number, and some languages
+        // use their "one" plural form for 21, 31…
+        alert.messageText = failures.count == 1
+            ? String(localized: "Couldn't complete the operation", bundle: .module, comment: "Alert title: one dropped or pasted item failed")
+            : String(localized: "\(failures.count) items couldn't be transferred", bundle: .module,
+                     comment: "Alert title: several dropped or pasted items failed")
+        alert.informativeText = failures.prefix(5).map { failure in
+            let name = DisplayName.sanitize((failure.path as NSString).lastPathComponent)
+            return String(localized: "transferFailure.nameAndMessage", defaultValue: "\(name): \(failure.message)", bundle: .module,
+                          comment: "Transfer failure alert, one line per item: the file name, then the error message")
+        }.joined(separator: "\n")
         alert.runModal()
     }
 }

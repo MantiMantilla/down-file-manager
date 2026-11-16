@@ -16,47 +16,49 @@ public enum Command: String, CaseIterable, Codable, Sendable {
     // App
     case settings, debugConsole
 
+    /// Display title for menus and Settings. Persisted settings and menu items identify commands by `rawValue`.
     public var title: String {
         switch self {
-        case .locationEntry: "Enter Location…"
-        case .back: "Back"
-        case .forward: "Forward"
-        case .up: "Enclosing Folder"
-        case .home: "Home"
-        case .open: "Open"
-        case .toggleHidden: "Show Hidden Files"
-        case .reload: "Reload"
-        case .viewList: "as List"
-        case .viewGrid: "as Grid"
-        case .viewColumns: "as Columns"
-        case .zoomIn: "Zoom In"
-        case .zoomOut: "Zoom Out"
-        case .zoomReset: "Actual Size"
-        case .toggleSidebar: "Toggle Sidebar"
-        case .quickLook: "Quick Look"
-        case .newTab: "New Tab"
-        case .newWindow: "New Window"
-        case .closeTab: "Close Tab"
-        case .nextTab: "Show Next Tab"
-        case .previousTab: "Show Previous Tab"
-        case .tab1, .tab2, .tab3, .tab4, .tab5, .tab6, .tab7, .tab8, .tab9: "Go to Tab \(tabIndex! + 1)"
-        case .newFolder: "New Folder"
-        case .rename: "Rename…"
-        case .trash: "Move to Trash"
-        case .deletePermanently: "Delete Permanently…"
-        case .properties: "Properties"
-        case .pin: "Pin to Sidebar"
-        case .openInTerminal: "Open in Terminal"
-        case .copy: "Copy"
-        case .cut: "Cut"
-        case .paste: "Paste"
-        case .undo: "Undo"
-        case .redo: "Redo"
-        case .selectAll: "Select All"
-        case .invertSelection: "Invert Selection"
-        case .search: "Search"
-        case .settings: "Settings…"
-        case .debugConsole: "Debug Console"
+        case .locationEntry: String(localized: "Enter Location…", bundle: .module, comment: "Go menu: type a path into the path bar")
+        case .back: String(localized: "Back", bundle: .module, comment: "Go menu: go to the previous folder")
+        case .forward: String(localized: "Forward", bundle: .module, comment: "Go menu: go to the next folder in history")
+        case .up: String(localized: "Enclosing Folder", bundle: .module, comment: "Go menu: go to the parent folder")
+        case .home: String(localized: "Home", bundle: .module, comment: "Go menu: go to the home folder")
+        case .open: String(localized: "Open", bundle: .module, comment: "File menu and context menu: open the selected items")
+        case .toggleHidden: String(localized: "Show Hidden Files", bundle: .module, comment: "View menu: toggle showing hidden files")
+        case .reload: String(localized: "Reload", bundle: .module, comment: "View menu: reload the folder")
+        case .viewList: String(localized: "as List", bundle: .module, comment: "View menu: show the folder as a list (reads “View as List”)")
+        case .viewGrid: String(localized: "as Grid", bundle: .module, comment: "View menu: show the folder as a grid of icons (reads “View as Grid”)")
+        case .viewColumns: String(localized: "as Columns", bundle: .module, comment: "View menu: show the folder in columns (reads “View as Columns”)")
+        case .zoomIn: String(localized: "Zoom In", bundle: .module, comment: "View menu: make the file list larger")
+        case .zoomOut: String(localized: "Zoom Out", bundle: .module, comment: "View menu: make the file list smaller")
+        case .zoomReset: String(localized: "Actual Size", bundle: .module, comment: "View menu: reset the file list zoom")
+        case .toggleSidebar: String(localized: "Toggle Sidebar", bundle: .module, comment: "View menu: show or hide the sidebar")
+        case .quickLook: String(localized: "Quick Look", bundle: .module, comment: "View menu: preview the selection with Quick Look (Apple feature name)")
+        case .newTab: String(localized: "New Tab", bundle: .module, comment: "File menu: open a new tab")
+        case .newWindow: String(localized: "New Window", bundle: .module, comment: "File menu: open a new window")
+        case .closeTab: String(localized: "Close Tab", bundle: .module, comment: "File menu: close the current tab")
+        case .nextTab: String(localized: "Show Next Tab", bundle: .module, comment: "Window menu: switch to the next tab")
+        case .previousTab: String(localized: "Show Previous Tab", bundle: .module, comment: "Window menu: switch to the previous tab")
+        case .tab1, .tab2, .tab3, .tab4, .tab5, .tab6, .tab7, .tab8, .tab9:
+            String(localized: "Go to Tab \(tabIndex! + 1)", bundle: .module, comment: "Window menu (hidden item): switch to tab number N")
+        case .newFolder: String(localized: "New Folder", bundle: .module, comment: "File menu and context menu: create a folder")
+        case .rename: String(localized: "Rename…", bundle: .module, comment: "File menu and context menu: rename the selected item")
+        case .trash: String(localized: "Move to Trash", bundle: .module, comment: "File menu and context menu: move the selection to the Trash")
+        case .deletePermanently: String(localized: "Delete Permanently…", bundle: .module, comment: "File menu: delete the selection without using the Trash")
+        case .properties: String(localized: "Properties", bundle: .module, comment: "File menu and context menu: show information about the selection")
+        case .pin: String(localized: "Pin to Sidebar", bundle: .module, comment: "File menu and context menus: add the folder to the sidebar’s Pinned section")
+        case .openInTerminal: String(localized: "Open in Terminal", bundle: .module, comment: "File menu and context menu: open the folder in a terminal app")
+        case .copy: String(localized: "Copy", bundle: .module, comment: "Edit menu and context menu: copy the selection (verb)")
+        case .cut: String(localized: "Cut", bundle: .module, comment: "Edit menu and context menu: cut the selection (verb)")
+        case .paste: String(localized: "Paste", bundle: .module, comment: "Edit menu and context menu: paste (verb)")
+        case .undo: String(localized: "Undo", bundle: .module, comment: "Edit menu: undo the last action")
+        case .redo: String(localized: "Redo", bundle: .module, comment: "Edit menu: redo the last undone action")
+        case .selectAll: String(localized: "Select All", bundle: .module, comment: "Edit menu: select every item")
+        case .invertSelection: String(localized: "Invert Selection", bundle: .module, comment: "Edit menu: select the unselected items and deselect the rest")
+        case .search: String(localized: "Search", bundle: .module, comment: "Edit menu and toolbar: search for files (verb)")
+        case .settings: String(localized: "Settings…", bundle: .module, comment: "App menu: open the Settings window")
+        case .debugConsole: String(localized: "Debug Console", bundle: .module, comment: "View menu: open the Debug Console developer tool")
         }
     }
 
@@ -144,6 +146,15 @@ public struct KeyCombo: Codable, Hashable, Sendable, CustomStringConvertible {
     }
 
     public var description: String { modifiers.symbols + keySymbol }
+
+    /// The combo as shown to people (Settings' shortcut list): like `description`, but named keys are
+    /// localized. `description` stays fixed because logs use it.
+    public var displayDescription: String {
+        let name = key == "space"
+            ? String(localized: "Space", bundle: .module, comment: "Shortcut list in Settings: the space bar key")
+            : keySymbol
+        return modifiers.symbols + name
+    }
 
     /// Parses "⌥←", "cmd+shift+n", "F2".
     public static func parse(_ text: String) -> KeyCombo? {

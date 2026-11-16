@@ -1,4 +1,5 @@
-.PHONY: build app debug-app run test test-integration test-all test-xcode test-tsan bench coverage install clean
+.PHONY: build app debug-app run test check test-integration test-all test-xcode test-tsan bench coverage install clean \
+	l10n-sync l10n-check l10n-pseudo
 
 # Xcode is required (the Command Line Tools alone can't build the app target). The Xcode chosen with
 # `xcode-select -s` is used; only when that is the Command Line Tools does this fall back to
@@ -54,6 +55,32 @@ run: debug-app
 # Unit + ViewModel + in-process AppKit tests (fast).
 test:
 	swift test
+
+# Run before opening a PR: the tests plus the String Catalog check.
+check: test l10n-check
+
+# Updates Sources/*/Localizable.xcstrings from the strings used in code (see README → Localization).
+l10n-sync:
+	scripts/l10n.sh sync
+
+# Fails if the String Catalogs are out of date (new, unused or conflicting keys).
+l10n-check:
+	scripts/l10n.sh check
+
+# Snapshots of the main and Settings windows in Xcode's accented and double-length pseudolanguages.
+# Accented text went through a catalog; plain text is a literal that bypasses it. Double-length text
+# shows truncation and clipping. Plural strings render garbled in both (a Foundation quirk with
+# pseudolanguages, not a bug). Output: build/l10n/*.png
+L10N_FIXTURE := build/l10n/fixture
+l10n-pseudo: debug-app
+	mkdir -p "$(L10N_FIXTURE)/Projects" "$(L10N_FIXTURE)/Holiday photos 2024"
+	printf 'notes' > "$(L10N_FIXTURE)/notes.txt"
+	printf '%04096d' 0 > "$(L10N_FIXTURE)/A rather long document name for the quarterly report.pdf"
+	DOWN_SNAPSHOT_SETTINGS=1 ./build/Down.app/Contents/MacOS/Down -NSAccentuateLocalizedStrings YES \
+	  --snapshot build/l10n/accented.png "$(L10N_FIXTURE)"
+	DOWN_SNAPSHOT_SETTINGS=1 ./build/Down.app/Contents/MacOS/Down -NSDoubleLocalizedStrings YES \
+	  --snapshot build/l10n/double.png "$(L10N_FIXTURE)"
+	@ls build/l10n/*.png
 
 # Real-filesystem tests (temp dirs, FSEvents, copyfile).
 test-integration:

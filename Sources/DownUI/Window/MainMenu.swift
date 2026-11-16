@@ -53,26 +53,35 @@ enum MainMenu {
 
         // App menu
         let app = NSMenu(title: appName)
-        app.addItem(withTitle: "About \(appName)", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        app.addItem(withTitle: String(localized: "About \(appName)", bundle: .module,
+                                      comment: "App menu: opens the About panel. The argument is the app name"),
+                    action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         app.addItem(.separator())
         add(app, .settings)
         app.addItem(.separator())
-        let services = NSMenuItem(title: "Services", action: nil, keyEquivalent: "")
-        services.submenu = NSMenu(title: "Services")
+        let services = NSMenuItem(title: String(localized: "Services", bundle: .module, comment: "App menu: the system Services submenu"),
+                                  action: nil, keyEquivalent: "")
+        services.submenu = NSMenu(title: services.title)
         NSApp?.servicesMenu = services.submenu
         app.addItem(services)
         app.addItem(.separator())
         // ⌘H belongs to "Show Hidden Files" (GNOME's Ctrl+H), so Hide has no shortcut.
-        app.addItem(withTitle: "Hide \(appName)", action: #selector(NSApplication.hide(_:)), keyEquivalent: "")
-        let hideOthers = app.addItem(withTitle: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
+        app.addItem(withTitle: String(localized: "Hide \(appName)", bundle: .module,
+                                      comment: "App menu: hides the app. The argument is the app name"),
+                    action: #selector(NSApplication.hide(_:)), keyEquivalent: "")
+        let hideOthers = app.addItem(withTitle: String(localized: "Hide Others", bundle: .module, comment: "App menu: hide the other apps"),
+                                     action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         hideOthers.keyEquivalentModifierMask = [.command, .option]
-        app.addItem(withTitle: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
+        app.addItem(withTitle: String(localized: "Show All", bundle: .module, comment: "App menu: show all hidden apps"),
+                    action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
         app.addItem(.separator())
-        app.addItem(withTitle: "Quit \(appName)", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        app.addItem(withTitle: String(localized: "Quit \(appName)", bundle: .module,
+                                      comment: "App menu: quits the app. The argument is the app name"),
+                    action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         addSubmenu(main, app)
 
         // File
-        let file = NSMenu(title: "File")
+        let file = NSMenu(title: String(localized: "File", bundle: .module, comment: "Menu bar title"))
         add(file, .newWindow)
         add(file, .newTab)
         add(file, .newFolder)
@@ -91,7 +100,7 @@ enum MainMenu {
         addSubmenu(main, file)
 
         // Edit
-        let edit = NSMenu(title: "Edit")
+        let edit = NSMenu(title: String(localized: "Edit", bundle: .module, comment: "Menu bar title"))
         add(edit, .undo)
         add(edit, .redo)
         edit.addItem(.separator())
@@ -105,7 +114,7 @@ enum MainMenu {
         addSubmenu(main, edit)
 
         // View
-        let view = NSMenu(title: "View")
+        let view = NSMenu(title: UIStrings.view)
         add(view, .viewList)
         add(view, .viewGrid)
         add(view, .viewColumns)
@@ -124,7 +133,7 @@ enum MainMenu {
         addSubmenu(main, view)
 
         // Go
-        let go = NSMenu(title: "Go")
+        let go = NSMenu(title: String(localized: "Go", bundle: .module, comment: "Menu bar title"))
         add(go, .back)
         add(go, .forward)
         add(go, .up)
@@ -134,9 +143,11 @@ enum MainMenu {
         addSubmenu(main, go)
 
         // Window
-        let window = NSMenu(title: "Window")
-        window.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
-        window.addItem(withTitle: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
+        let window = NSMenu(title: String(localized: "Window", bundle: .module, comment: "Menu bar title"))
+        window.addItem(withTitle: String(localized: "Minimize", bundle: .module, comment: "Window menu: minimize the window to the Dock"),
+                        action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        window.addItem(withTitle: String(localized: "Zoom", bundle: .module, comment: "Window menu: zoom the window (verb)"),
+                        action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
         window.addItem(.separator())
         add(window, .nextTab)
         add(window, .previousTab)
@@ -145,11 +156,13 @@ enum MainMenu {
             items.forEach { $0.isHidden = true; $0.allowsKeyEquivalentWhenHidden = true; window.addItem($0) }
         }
         window.addItem(.separator())
-        window.addItem(withTitle: "Bring All to Front", action: #selector(NSApplication.arrangeInFront(_:)), keyEquivalent: "")
+        window.addItem(withTitle: String(localized: "Bring All to Front", bundle: .module,
+                                         comment: "Window menu: bring all of the app’s windows forward"),
+                        action: #selector(NSApplication.arrangeInFront(_:)), keyEquivalent: "")
         addSubmenu(main, window)
         NSApp?.windowsMenu = window
 
-        let help = NSMenu(title: "Help")
+        let help = NSMenu(title: String(localized: "Help", bundle: .module, comment: "Menu bar title"))
         addSubmenu(main, help)
         NSApp?.helpMenu = help
 

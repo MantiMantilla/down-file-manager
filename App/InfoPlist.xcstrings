@@ -1,0 +1,66 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSDesktopFolderUsageDescription" : {
+      "comment" : "macOS privacy prompt, shown the first time Down opens the Desktop folder.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Down needs access to your Desktop folder to show and manage its files."
+          }
+        }
+      }
+    },
+    "NSDocumentsFolderUsageDescription" : {
+      "comment" : "macOS privacy prompt, shown the first time Down opens the Documents folder.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Down needs access to your Documents folder to show and manage its files."
+          }
+        }
+      }
+    },
+    "NSDownloadsFolderUsageDescription" : {
+      "comment" : "macOS privacy prompt, shown the first time Down opens the Downloads folder.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Down needs access to your Downloads folder to show and manage its files."
+          }
+        }
+      }
+    },
+    "NSNetworkVolumesUsageDescription" : {
+      "comment" : "macOS privacy prompt, shown the first time Down opens a network volume.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Down needs access to network volumes to show and manage their files."
+          }
+        }
+      }
+    },
+    "NSRemovableVolumesUsageDescription" : {
+      "comment" : "macOS privacy prompt, shown the first time Down opens an external drive.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Down needs access to external drives to show and manage their files."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}
