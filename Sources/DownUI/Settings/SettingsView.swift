@@ -125,12 +125,24 @@ private struct AdvancedPane: View {
 
 @MainActor
 final class SettingsWindowController: NSWindowController {
+    /// The window's content size. The panes are grouped Forms, which scroll and so have no height of
+    /// their own: sized to its content, the window came out about 100 pt tall.
+    static let contentSize = NSSize(width: 560, height: 420)
+
     init(app: AppViewModel) {
         let hosting = NSHostingController(rootView: SettingsView(app: app))
+        // Don't let the hosting controller size the window from the Forms' (near-zero) ideal height.
+        hosting.sizingOptions = []
         let window = NSWindow(contentViewController: hosting)
         window.title = "Down Settings"
         window.styleMask = [.titled, .closable]
+        window.setContentSize(Self.contentSize)
         window.setFrameAutosaveName("DownSettings")
+        // That restored any saved frame. The window isn't resizable, so keep only its position: a saved
+        // size can be the old ~100 pt one.
+        let topLeft = NSPoint(x: window.frame.minX, y: window.frame.maxY)
+        window.setContentSize(Self.contentSize)
+        window.setFrameTopLeftPoint(topLeft)
         super.init(window: window)
     }
 
