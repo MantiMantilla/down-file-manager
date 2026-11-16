@@ -1,0 +1,17 @@
+// Copy to Config/Local.xcconfig (git-ignored) and uncomment ONE option.
+// Switching identity changes the app's code requirement, so macOS asks for folder permissions once more.
+// To clear the old grants: tccutil reset All app.down.Down
+
+// Option A: free personal team. Add your Apple ID in Xcode > Settings > Accounts first; the team ID
+// is shown there (or in Keychain Access on the "Apple Development: …" certificate).
+// CODE_SIGN_STYLE = Automatic
+// CODE_SIGN_IDENTITY = Apple Development
+// DEVELOPMENT_TEAM = ABCDE12345
+
+// Option B: the self-signed "Down Local Signing" identity created by scripts/make-dev-cert.sh.
+// It has no team ID, so library validation would reject Xcode's separate Debug dylib under the
+// hardened runtime; ENABLE_DEBUG_DYLIB = NO links Debug builds into a single executable instead.
+// CODE_SIGN_STYLE = Manual
+// CODE_SIGN_IDENTITY = Down Local Signing
+// DEVELOPMENT_TEAM =
+// ENABLE_DEBUG_DYLIB = NO

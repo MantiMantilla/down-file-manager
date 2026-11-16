@@ -12,6 +12,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B0971C75C70C41AD10E0A536 /* Down.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Down.xcconfig; sourceTree = "<group>"; };
 		B74E1A450534EEB2A1B77D91 /* Down */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Down; path = .; sourceTree = "<group>"; };
 		EFF6029C1FBC56B3623D6811 /* Down.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Down.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -38,8 +39,17 @@
 			children = (
 				B74E1A450534EEB2A1B77D91 /* Down */,
 				4059E5539D2FF7907E890851 /* App */,
+				7D183DD4AE270CE94F1E937D /* Config */,
 				5CBEEDA69E5428808D0835CA /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		7D183DD4AE270CE94F1E937D /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				B0971C75C70C41AD10E0A536 /* Down.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		5CBEEDA69E5428808D0835CA /* Products */ = {
@@ -170,13 +180,10 @@
 		};
 		938328B25F675F746C87AEBF /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = B0971C75C70C41AD10E0A536 /* Down.xcconfig */;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = Resources/Down.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -190,13 +197,10 @@
 		};
 		1789AA70E1EDA2B6E05643EF /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = B0971C75C70C41AD10E0A536 /* Down.xcconfig */;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = Resources/Down.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

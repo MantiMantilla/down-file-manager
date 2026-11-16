@@ -5,3 +5,4 @@ xcuserdata/
 .DS_Store
 /Packages
 default.profraw
+Config/Local.xcconfig

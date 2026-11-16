@@ -1,0 +1,23 @@
+// Signing and runtime settings for the Down app target (Down.xcodeproj bases the target on this file).
+//
+// With no Config/Local.xcconfig, builds are signed ad-hoc ("Sign to Run Locally"). Ad-hoc signatures
+// change on every build, so macOS asks for folder permissions again after each rebuild. To keep them,
+// copy Local.xcconfig.example to Local.xcconfig (git-ignored) and pick a stable identity there.
+// Never commit a team ID.
+
+CODE_SIGN_ENTITLEMENTS = Resources/Down.entitlements
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = -
+DEVELOPMENT_TEAM =
+
+// Hardened runtime, no exceptions (see Resources/Down.entitlements).
+ENABLE_HARDENED_RUNTIME = YES
+
+// Xcode leaves the runtime flag off ad-hoc signatures, so force it for Release. Not for Debug: there
+// library validation would refuse to load Down.debug.dylib into an ad-hoc signed process.
+OTHER_CODE_SIGN_FLAGS[config=Release] = --options=runtime
+
+// The installed app carries no get-task-allow, like the old scripts/bundle.sh builds.
+CODE_SIGN_INJECT_BASE_ENTITLEMENTS[config=Release] = NO
+
+#include? "Local.xcconfig"
