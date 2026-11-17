@@ -62,13 +62,13 @@ struct LocalizedTextTests {
     @Test func pinTitles() {
         // Never renamed (still named after its folder): the resolved folder's display name.
         let unrenamed = Pin(name: "proj", path: "/x/proj")
-        #expect(SidebarViewController.title(of: unrenamed, resolvedPath: "/Applications")
+        #expect(SidebarViewController.title(of: unrenamed, resolvedPath: "/Applications", home: "/Users/someone")
                 == FileManager.default.displayName(atPath: "/Applications"))
         // Renamed by the user: kept as is.
         let renamed = Pin(name: "Work", path: "/x/proj")
-        #expect(SidebarViewController.title(of: renamed, resolvedPath: "/Applications") == "Work")
+        #expect(SidebarViewController.title(of: renamed, resolvedPath: "/Applications", home: "/Users/someone") == "Work")
         let home = Pin(name: "Home", path: "/Users/someone")
-        #expect(SidebarViewController.title(of: home, resolvedPath: "/Users/someone") == "Home")
+        #expect(SidebarViewController.title(of: home, resolvedPath: "/Users/someone", home: "/Users/someone") == "Home")
     }
 
     @Test func sortFieldTitles() {

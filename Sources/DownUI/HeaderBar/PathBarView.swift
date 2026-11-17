@@ -149,13 +149,17 @@ final class PathBarView: NSView, NSTextFieldDelegate {
         func symbol(_ name: String) -> NSImage? {
             NSImage(systemSymbolName: name, accessibilityDescription: nil)
         }
+        // Folder names as Finder shows them, for local paths only (like the window title).
+        func folderName(_ path: String) -> String {
+            loc.isLocal ? FolderName.display(forPath: path, home: home) : (path as NSString).lastPathComponent
+        }
         if path == home || path.hasPrefix(home + "/") {
             var segs = [Segment(title: UIStrings.home, image: symbol("house"), location: .file(home))]
             let rest = path.dropFirst(home.count).split(separator: "/")
             var cur = home
             for part in rest {
                 cur += "/" + part
-                segs.append(Segment(title: FolderName.display(forPath: cur), image: nil, location: .file(cur)))
+                segs.append(Segment(title: folderName(cur), image: nil, location: .file(cur)))
             }
             return segs
         }
@@ -174,7 +178,7 @@ final class PathBarView: NSView, NSTextFieldDelegate {
         var cur = ""
         for part in path.split(separator: "/") {
             cur += "/" + part
-            segs.append(Segment(title: FolderName.display(forPath: cur), image: nil, location: .file(cur)))
+            segs.append(Segment(title: folderName(cur), image: nil, location: .file(cur)))
         }
         return segs
     }
