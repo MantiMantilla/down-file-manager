@@ -149,15 +149,15 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
                                ("Pictures", "photo"), ("Music", "music.note"), ("Movies", "film")] {
             let p = home + "/" + name
             if fm.fileExists(atPath: p) {
-                places.append(SidebarNode(kind: .place, title: FolderName.display(forPath: p), symbol: symbol, path: p))
+                places.append(SidebarNode(kind: .place, title: FolderName.display(forPath: p, home: home), symbol: symbol, path: p))
             }
         }
-        places.append(SidebarNode(kind: .place, title: FolderName.display(forPath: "/Applications"), symbol: "square.grid.3x3",
+        places.append(SidebarNode(kind: .place, title: FolderName.display(forPath: "/Applications", home: vm.app.env.homePath), symbol: "square.grid.3x3",
                                   path: "/Applications"))
 
         let pins = vm.app.settings.pins.map { pin in
             let path = vm.app.resolvedPath(for: pin)
-            return SidebarNode(kind: .pin(pin.id), title: Self.title(of: pin, resolvedPath: path), symbol: "folder", path: path)
+            return SidebarNode(kind: .pin(pin.id), title: Self.title(of: pin, resolvedPath: path, home: vm.app.env.homePath), symbol: "folder", path: path)
         }
 
         var devices: [SidebarNode] = []
@@ -329,9 +329,9 @@ final class SidebarViewController: NSViewController, NSOutlineViewDataSource, NS
     /// A pin's sidebar title. A pin still named after its folder (never renamed) shows the folder's
     /// localized display name, like the Places rows ("Dokumente" for Documents in German). A name the
     /// user gave it is shown as is. Nothing about the stored pin changes.
-    static func title(of pin: Pin, resolvedPath: String) -> String {
+    static func title(of pin: Pin, resolvedPath: String, home: String) -> String {
         guard pin.name == (pin.path as NSString).lastPathComponent else { return pin.name }
-        return FolderName.display(forPath: resolvedPath)
+        return FolderName.display(forPath: resolvedPath, home: home)
     }
 
     @objc private func menuUnpin(_ sender: NSMenuItem) {
